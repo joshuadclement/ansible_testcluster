@@ -1,0 +1,3 @@
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/prepare.yml"
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/crio.yml"

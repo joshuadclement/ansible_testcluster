@@ -1,0 +1,24 @@
+HISTSIZE=1000
+SAVEHIST=1000
+bindkey -v
+
+zstyle :compinstall filename '/home/user/.zshrc'
+zstyle ':completion:*' completer _expand _complete _ignored
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+
+autoload -Uz compinit
+compinit
+
+PS1=$'[%3F%n@%m%f %5F:%~%f]%# '
+HYPHEN_INSENSITIVE="true"
+
+autoload -U up-line-or-beginning-search
+zle -N up-line-or-beginning-search
+bindkey "^[[A" up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey "^[[B" down-line-or-beginning-search
+
+export EDITOR="vim"
+export VISUAL="$EDITOR"
+export PATH="$PATH:/usr/local/go/bin:/home/user/go/bin:/home/user/.local/bin"

@@ -1,0 +1,24 @@
+### If swap is on, then `swapon --show` will output the swap devices in a table
+### started with NAME. The grep command will have a nonzero exit code if it doesn't
+### get that table.
+### `register: swap_enabled` will record the exit code, and `ignore_errors` will keep
+### it from complaining if it is nonzero
+- name: Check if swap enabled
+  ansible.builtin.shell:
+    cmd: swapon --show | grep NAME
+  register: swap_enabled
+  ignore_errors: True
+
+- name: Disable swap since kubernetes can't work with swap enabled (1/2)
+  ansible.builtin.shell:
+    cmd: swapoff -a
+  when: swap_enabled == 0
+  become: True
+
+- name: Disable swap in fstab since kubernetes can't work with swap enabled (2/2)
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+  when: swap_enabled == 0
+  become: True
