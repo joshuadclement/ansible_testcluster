@@ -7,13 +7,12 @@
   ### If swap is on, then `swapon --show` will output the swap devices in a table
   ### started with NAME. The grep command will have a nonzero exit code if it doesn't
   ### get that table.
-  ### `register: swap_enabled` will record the exit code, and `ignore_errors` will keep
-  ### it from complaining if it is nonzero
   - name: Check if swap enabled
     ansible.builtin.shell:
       cmd: swapon --show | grep NAME
     register: swap_enabled
-    ignore_errors: True
+    failed_when: False
+    changed_when: False
   
   - name: Disable swap since kubernetes can't work with swap enabled (1/2)
     ansible.builtin.shell:
@@ -46,6 +45,16 @@
       update_cache: True
       upgrade: True
 
+  - name: Check restart needed
+    ansible.builtin.shell: "[[ -f /var/run/reboot-required ]]"
+    failed_when: False
+    changed_when: False
+    register: reboot_required
+
+  - name: Notify restart needed
+    ansible.builtin.debug:
+      msg: "***Reboot is required***"
+    when: reboot_required.rc == 0
 
 - name: Setup shell
   tags:
@@ -72,13 +81,14 @@
     VERSION=$(go version | sed -e 's/.*go\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/')
     [[ $VERSION != {{ golang_version }} ]]
   register: golang_correct_version
-  ignore_errors: True
+  failed_when: False
+  changed_when: False
 
 - name: Install golang
   tags:
     - sysprepare
     - golang
-  when: golang_correct_version == 0
+  when: golang_correct_version.rc == 0
   block:
   - name: Install golang, fetch files (1/3)
     ansible.builtin.get_url:

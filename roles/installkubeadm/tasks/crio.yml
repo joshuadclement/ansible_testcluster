@@ -37,7 +37,8 @@
     VERSION=$(crictl --version | sed -e 's/.*\(v[0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/')
     [[ $VERSION != {{ crictl_version }} ]]
   register: crictl_correct_version
-  ignore_errors: True
+  failed_when: False
+  changed_when: False
   
 - name: Install crictl
   tags:
@@ -63,13 +64,14 @@
 
 - name: Check cri-o is installed and running with the correct version
   ansible.builtin.shell: |
-    VERSION=$(sudo crictl --runtime-endpoint unix:///var/run/crio/crio.sock version)
+    VERSION=$(crictl --runtime-endpoint unix:///var/run/crio/crio.sock version | grep RuntimeVersion | sed -e 's/.*\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/')
     [[ "$VERSION" != {{ crio_version }} ]]
   register: crio_installed
-  ignore_errors: True
   tags:
     - k8sinstall
     - crio
+  failed_when: False
+  changed_when: False
 
 - name: Install cri-o from repository
   tags:
