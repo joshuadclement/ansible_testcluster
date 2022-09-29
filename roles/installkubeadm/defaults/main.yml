@@ -1,3 +1,7 @@
 kubernetes_minor_version: "1.25"
 crio_os_tag: "xUbuntu_22.04"
-crictl_version: "v{{ kubernetes_minor_version }}.0"
+crio_version: "{{ kubernetes_minor_version }}.0"
+crictl_version: "v{{ crio_version }}"
+golang_version: "1.19.1"
+golang_tar_url: "https://go.dev/dl/go1.19.1.linux-amd64.tar.gz"
+golang_tar_checksum: "sha256:acc512fbab4f716a8f97a8b3fbaa9ddd39606a28be6c2515ef7c6c6311acffde"
