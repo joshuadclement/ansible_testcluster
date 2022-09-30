@@ -1,0 +1,57 @@
+- name: Install Calico in control_plane
+  tags:
+    - k8sinstall
+    - calico
+    - current
+  when: control_plane
+  block:
+    - name: Install Calico, get manifest
+      tags: never
+      ansible.builtin.get_url:
+        url: "{{ calico_manifest_url }}"
+        dest: /tmp/tigera-operator.yaml
+        checksum: "{{ calico_manifest_checksum }}"
+
+    - name: Install Calico, apply manifest
+      kubernetes.core.k8s:
+        kubeconfig: "{{ k8s_admin_config }}"
+        apply: True
+        src: /tmp/tigera-operator.yaml
+        wait: True
+
+    - name: Install Calico, copy config
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/tigera-custom-resources.yaml.j2"
+        dest: /tmp/tigera-custom-resources.yaml
+
+    - name: Install Calico, apply custom resource manifest
+      kubernetes.core.k8s:
+        kubeconfig: "{{ k8s_admin_config }}"
+        apply: True
+        src: /tmp/tigera-custom-resources.yaml
+        wait: True
+
+    - name: Install Calico, clean up files
+      ansible.builtin.file:
+        path: /tmp/tigera-custom-resources.yaml
+        state: absent
+
+    - name: Install Calico, clean up files
+      ansible.builtin.file:
+        path: /tmp/tigera-operator.yaml
+        state: absent
+
+- name: Install calicoctl
+  tags:
+    - k8sinstall
+    - calico
+    - current
+  block:
+    - name: Install calicoctl, fetch
+      ansible.builtin.get_url:
+        url: "{{ calicoctl_url }}"
+        checksum: "{{ calicoctl_checksum }}"
+        dest: /etc/kubernetes/manually_installed_bin/kubectl-calico
+        mode: 0751
+        owner: root
+        group: root

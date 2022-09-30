@@ -1,7 +1,21 @@
+# Kubernetes
+pod_network_cidr: "10.2.0.0/16"
 kubernetes_minor_version: "1.25"
+k8s_admin_config: "/etc/kubernetes/admin.conf"
+k8s_admin_context: "/kubernetes-admin@kubernetes"
+
+# Cri-o (Container Runtime Interface)
 crio_os_tag: "xUbuntu_22.04"
 crio_version: "{{ kubernetes_minor_version }}.0"
 crictl_version: "v{{ crio_version }}"
+
+# Golang
 golang_version: "1.19.1"
 golang_tar_url: "https://go.dev/dl/go1.19.1.linux-amd64.tar.gz"
 golang_tar_checksum: "sha256:acc512fbab4f716a8f97a8b3fbaa9ddd39606a28be6c2515ef7c6c6311acffde"
+
+# Calico (Container Network Interface)
+calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/v3.24.1/manifests/tigera-operator.yaml"
+calico_manifest_checksum: "sha256:1afd2df8be22eb5f17d8d6942bdd2a9597ed13d5a140695ea2cfe88b4a271995"
+calicoctl_url: "https://github.com/projectcalico/calico/releases/download/v3.24.1/calicoctl-linux-amd64"
+calicoctl_checksum: "sha256:10a36ebc7a4cf355b28e061f5a5f4b261daff4773a51ac73ca1071e7551a934a"

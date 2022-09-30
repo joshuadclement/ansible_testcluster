@@ -37,7 +37,9 @@
     ansible.builtin.apt:
       update_cache: True
       name:
+        - python3-pip
         - zsh
+        - net-tools
       state: present
   
   - name: Update
@@ -107,3 +109,20 @@
     ansible.builtin.file:
       state: absent
       path: /tmp/go.tar.gz
+
+- name: Add directory to path for manually install utilities
+  tags:
+    - sysprepare
+  block:
+    - name: Add directory to path for manually install utilities, make directory
+      ansible.builtin.file:
+        path: /etc/kubernetes/manually_installed_bin
+        state: directory
+
+- name: Install python dependencies for ansible modules
+  tags:
+    - sysprepare
+  block:
+    - name: Install kubernetes module
+      pip:
+        name: kubernetes

@@ -1,0 +1,5 @@
+- name: Remove kubernetes cluster
+  hosts: cluster
+  roles:
+    - teardown
+  become: True

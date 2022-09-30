@@ -19,6 +19,7 @@ autoload -U down-line-or-beginning-search
 zle -N down-line-or-beginning-search
 bindkey "^[[B" down-line-or-beginning-search
 
+alias ls='ls --color'
 export EDITOR="vim"
 export VISUAL="$EDITOR"
-export PATH="$PATH:/usr/local/go/bin:/home/user/go/bin:/home/user/.local/bin"
+export PATH="$PATH:/etc/kubernetes/manually_installed_bin/:/usr/local/go/bin:/home/user/go/bin:/home/user/.local/bin"

@@ -1,0 +1,40 @@
+- name: Initialize control plane
+  tags:
+    - k8sinstall
+    - control_plane
+  # Only execute this block on the control_plane node, set in host vars
+  when: control_plane == True
+  block:
+    - name: Start kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+        enabled: True
+        daemon_reload: True
+
+    - name: Copy kubeadm config
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/kubeadm-config.yml.j2"
+        dest: /etc/kubernetes/kubeadm-config.yml
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Initialize kubeadm
+      ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yml 2>&1 > /home/user/kubeinit_output.txt
+
+    - name: Configure kubectl, make dir (1/2)
+      ansible.builtin.file:
+        path: /home/user/.kube
+        owner: user
+        group: user
+        state: directory
+
+    - name: Configre kubectl, copy config (2/2)
+      ansible.builtin.copy:
+        dest: /home/user/.kube/config
+        src: /etc/kubernetes/admin.conf
+        remote_src: True
+        owner: user
+        group: user
+        mode: 0600

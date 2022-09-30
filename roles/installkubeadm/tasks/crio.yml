@@ -1,6 +1,6 @@
 - name: Prepare network prerequisites
   tags:
-    - sysprepare
+    - crio
     - k8sinstall
   block:
   - name: Prepare network prerequisites, load modules br_netfilter (1/4)
