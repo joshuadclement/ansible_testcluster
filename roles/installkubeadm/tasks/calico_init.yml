@@ -2,26 +2,28 @@
   tags:
     - k8sinstall
     - calico
-    - current
   when: control_plane
   block:
     - name: Install Calico, get manifest
-      tags: never
       ansible.builtin.get_url:
         url: "{{ calico_manifest_url }}"
         dest: /tmp/tigera-operator.yaml
         checksum: "{{ calico_manifest_checksum }}"
 
+    # Needs server_side_apply in order to avoid the annotations.last-applied-configuration too long error
     - name: Install Calico, apply manifest
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True
         src: /tmp/tigera-operator.yaml
         wait: True
+        server_side_apply:
+          field_manager: kubectl
+          force_conflicts: True
 
     - name: Install Calico, copy config
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/tigera-custom-resources.yaml.j2"
+        src: "{{ role_path }}/templates/tigera-custom-resources.yml.j2"
         dest: /tmp/tigera-custom-resources.yaml
 
     - name: Install Calico, apply custom resource manifest
@@ -30,6 +32,9 @@
         apply: True
         src: /tmp/tigera-custom-resources.yaml
         wait: True
+        server_side_apply:
+          field_manager: kubectl
+          force_conflicts: True
 
     - name: Install Calico, clean up files
       ansible.builtin.file:
@@ -45,7 +50,6 @@
   tags:
     - k8sinstall
     - calico
-    - current
   block:
     - name: Install calicoctl, fetch
       ansible.builtin.get_url:
