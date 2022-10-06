@@ -2,7 +2,7 @@
   tags:
     - k8sinstall
     - calico
-  when: control_plane
+  when: "'control_plane' in group_names"
   block:
     - name: Install Calico, get manifest
       ansible.builtin.get_url:

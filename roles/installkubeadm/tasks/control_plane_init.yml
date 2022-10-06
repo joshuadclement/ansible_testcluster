@@ -2,8 +2,7 @@
   tags:
     - k8sinstall
     - control_plane
-  # Only execute this block on the control_plane node, set in host vars
-  when: control_plane == True
+  when: "'control_plane' in group_names"
   block:
     - name: Start kubelet
       ansible.builtin.systemd:

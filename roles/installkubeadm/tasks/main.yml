@@ -7,3 +7,5 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/control_plane_init.yml"
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/calico_init.yml"
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_node_init.yml"
