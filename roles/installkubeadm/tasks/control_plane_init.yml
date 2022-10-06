@@ -4,14 +4,14 @@
     - control_plane
   when: "'control_plane' in group_names"
   block:
-    - name: Start kubelet
+    - name: Initialize control plane, start kubelet (1/5)
       ansible.builtin.systemd:
         name: kubelet
         state: restarted
         enabled: True
         daemon_reload: True
 
-    - name: Copy kubeadm config
+    - name: Initialize control plane, copy kubeadm config (2/5)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/kubeadm-config.yml.j2"
         dest: /etc/kubernetes/kubeadm-config.yml
@@ -19,21 +19,31 @@
         group: root
         mode: 0644
 
-    - name: Initialize kubeadm
+    - name: Initialize control plane, initialize kubeadm (3/5)
       ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yml 2>&1 > /home/user/kubeinit_output.txt
 
-    - name: Configure kubectl, make dir (1/2)
+    - name: Initialize control plane, make config dirs (4/5)
+      loop:
+        - username: "user"
+          homepath: "/home/user"
+        - username: "root"
+          homepath: "/root"
       ansible.builtin.file:
-        path: /home/user/.kube
-        owner: user
-        group: user
+        path: "{{ item.homepath }}/.kube"
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
         state: directory
 
-    - name: Configre kubectl, copy config (2/2)
+    - name: Initialize control plane, copy kubectl config (5/5)
+      loop:
+        - username: "user"
+          homepath: "/home/user"
+        - username: "root"
+          homepath: "/root"
       ansible.builtin.copy:
-        dest: /home/user/.kube/config
+        dest: "{{ item.homepath }}/.kube/config"
         src: /etc/kubernetes/admin.conf
         remote_src: True
-        owner: user
-        group: user
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
         mode: 0600
