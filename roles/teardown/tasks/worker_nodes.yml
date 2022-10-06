@@ -1,0 +1,57 @@
+- name: Drain worker nodes
+  tags:
+    - worker_nodes
+    - never
+  when: "'control_plane' in group_names"
+  block:
+    - name: Drain worker nodes, get list of worker nodes (1/3)
+      ansible.builtin.shell: kubectl get nodes | tail -n +2 | awk '{print $1;}'
+      changed_when: False
+      register: names_of_nodes
+
+    - name: Drain worker nodes, drain all (2/3)
+      loop: "{{ names_of_nodes.stdout_lines }}"
+      when: item != ansible_hostname
+      ansible.builtin.shell: |
+        kubectl drain {{ item }} --delete-emptydir-data --force --ignore-daemonsets
+      register: drain_result
+
+    - name: Save result of draining workers (3/3)
+      ansible.builtin.set_fact:
+        drain_failed_for_any_worker: "{{ drain_result.results | selectattr('failed', 'defined') | map(attribute='failed') | map('bool') | max }}"
+
+
+- name: Reset worker nodes
+  tags:
+    - worker_nodes
+    - never
+  when:
+    - "'control_plane' not in group_names"
+    - "not hostvars[groups['control_plane'][0]]['drain_failed_for_any_worker']"
+  block:
+    - name: Reset worker nodes, reset (1/3)
+      ansible.builtin.expect: 
+        command: kubeadm reset
+        responses:
+          (.*)Are you sure you want to proceed(.*): "y"
+      register: output
+
+    - name: Reset worker nodes, log kubeadm reset output (2/3)
+      ansible.builtin.copy:
+        content: "{{ output.stdout }}"
+        dest: /var/log/kubeadm_reset_output
+
+    - name: Reset worker nodes, reset iptables (3/3)
+      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+
+- name: Remove worker nodes from control plane
+  tags:
+    - worker_nodes
+    - never
+  when:
+    - "'control_plane' in group_names"
+    - "not drain_failed_for_any_worker"
+  loop: "{{ names_of_nodes.stdout_lines }}"
+  ansible.builtin.shell: |
+    kubectl delete node {{ item }}
+
