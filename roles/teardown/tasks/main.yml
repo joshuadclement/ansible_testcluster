@@ -1,3 +1,7 @@
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_nodes.yml"
+
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/control_plane.yml"
 
-- ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_nodes.yml"
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/uninstall_packages.yml"
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/clean_directories.yml"

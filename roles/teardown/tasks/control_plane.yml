@@ -2,7 +2,7 @@
   tags:
     - control_plane
     - never
-  when: control_plane
+  when: "'control_plane' in group_names"
   block:
     - name: Tear down the cluster on the control plane, kubeadm reset
       ansible.builtin.expect:
@@ -17,4 +17,4 @@
         dest: /var/log/kubeadm_reset_output
 
     - name: Tear down the cluster on the control plane, reset iptables
-      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X && iptables-restore < /etc/iptables/rules.v4

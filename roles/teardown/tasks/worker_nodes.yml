@@ -16,10 +16,9 @@
         kubectl drain {{ item }} --delete-emptydir-data --force --ignore-daemonsets
       register: drain_result
 
-    - name: Save result of draining workers (3/3)
+    - name: Save result of draining workers first (3/3)
       ansible.builtin.set_fact:
-        drain_failed_for_any_worker: "{{ drain_result.results | selectattr('failed', 'defined') | map(attribute='failed') | map('bool') | max }}"
-
+        drain_failed_for_any_worker: "{{ drain_result.results | map(attribute='failed', default=False) | map('bool') | flatten | max}}"
 
 - name: Reset worker nodes
   tags:

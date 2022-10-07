@@ -1,0 +1,40 @@
+- name: Uninstall packages
+  tags:
+    - never
+    - aptremove
+  block:
+    - name: Uninstall packages, un-hold kubelet (1/4)
+      ansible.builtin.dpkg_selections:
+        name: kubelet
+        selection: install
+        
+    - name: Uninstall packages, un-hold kubeadm (2/4)
+      ansible.builtin.dpkg_selections:
+        name: kubeadm
+        selection: install
+        
+    - name: Uninstall packages, un-hold kubectl (3/4)
+      ansible.builtin.dpkg_selections:
+        name: kubectl
+        selection: install
+
+    - name: Uninstall packages, stop kubelet (4/4)
+      ansible.builtin.systemd:
+        name: kubelet
+        state: stopped
+        
+    - name: Uninstall packages, stop crio (5/4)
+      ansible.builtin.systemd:
+        name: crio
+        state: stopped
+        
+    - name: Uninstall packages, uninstall (4/4)
+      ansible.builtin.apt:
+        name:
+          - cri-o
+          - cri-o-runc
+          - containernetworking-plugins
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: absent

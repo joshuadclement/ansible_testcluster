@@ -1,6 +1,7 @@
 - name: Install kubernetes bootstrapping parts
   tags:
     - k8sinstall
+    - kubeadm
   block:
     - name: Install kubernetes bootstrapping parts, get signing key (1/6)
       ansible.builtin.get_url:
@@ -19,9 +20,9 @@
       ansible.builtin.apt:
         update_cache: True
         name:
-          - kubelet
-          - kubeadm
-          - kubectl
+          - kubelet={{ kubernetes_version }}-00
+          - kubeadm={{ kubernetes_version }}-00
+          - kubectl={{ kubernetes_version }}-00
         state: present
 
     - name: Install kubernetes bootstrapping parts, hold package version constant (4/6)
