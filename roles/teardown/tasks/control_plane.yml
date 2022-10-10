@@ -4,17 +4,21 @@
     - never
   when: "'control_plane' in group_names"
   block:
-    - name: Tear down the cluster on the control plane, kubeadm reset
+    - name: Tear down the cluster on the control plane, kubeadm reset (1/3)
       ansible.builtin.expect:
         command: kubeadm reset
         responses:
           (.*)Are you sure you want to proceed(.*): "y"
       register: output
+      failed_when:
+        - output.failed
+        - '"The command was not found or was not executable" not in output.msg'
 
-    - name: Tear down the cluster on the control plane, log kubeadm reset output
+    - name: Tear down the cluster on the control plane, log kubeadm reset output (2/3)
+      when: '"stdout" in output'
       ansible.builtin.copy:
         content: "{{ output.stdout }}"
         dest: /var/log/kubeadm_reset_output
 
-    - name: Tear down the cluster on the control plane, reset iptables
+    - name: Tear down the cluster on the control plane, reset iptables (3/3)
       ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X && iptables-restore < /etc/iptables/rules.v4

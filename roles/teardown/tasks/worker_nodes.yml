@@ -16,9 +16,14 @@
         kubectl drain {{ item }} --delete-emptydir-data --force --ignore-daemonsets
       register: drain_result
 
+      # If there are nodes in the cluster, this should look at the results of draining them and save False if none of them failed.
+      # Otherwise, it should just save False to mark that there is no problem.
     - name: Save result of draining workers first (3/3)
       ansible.builtin.set_fact:
-        drain_failed_for_any_worker: "{{ drain_result.results | map(attribute='failed', default=False) | map('bool') | flatten | max}}"
+        drain_failed_for_any_worker: >
+          {% if names_of_nodes.stdout_lines | length > 0 %}
+          {{ drain_result.results | map(attribute='failed', default=False) | map('bool') | flatten | max }}
+          {% else %} False {% endif %}
 
 - name: Reset worker nodes
   tags:
@@ -41,7 +46,7 @@
         dest: /var/log/kubeadm_reset_output
 
     - name: Reset worker nodes, reset iptables (3/3)
-      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X < /etc/iptables/rules.v4
 
 - name: Remove worker nodes from control plane
   tags:

@@ -20,7 +20,7 @@
         mode: 0644
 
     - name: Initialize control plane, initialize kubeadm (3/5)
-      ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yml 2>&1 > /home/user/kubeinit_output.txt
+      ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yml 2>&1 > /var/log/kubeadm_init_output.txt
 
     - name: Initialize control plane, make config dirs (4/5)
       loop:

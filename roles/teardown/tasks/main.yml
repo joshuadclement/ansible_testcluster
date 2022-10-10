@@ -4,4 +4,4 @@
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/uninstall_packages.yml"
 
-- ansible.builtin.import_tasks: "{{ role_path }}/tasks/clean_directories.yml"
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/clean_files.yml"

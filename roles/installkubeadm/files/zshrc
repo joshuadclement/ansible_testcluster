@@ -2,7 +2,7 @@ HISTSIZE=1000
 SAVEHIST=1000
 bindkey -v
 
-zstyle :compinstall filename '/home/user/.zshrc'
+zstyle :compinstall filename '~/.zshrc'
 zstyle ':completion:*' completer _expand _complete _ignored
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
@@ -22,4 +22,4 @@ bindkey "^[OB" down-line-or-beginning-search
 alias ls='ls --color'
 export EDITOR="vim"
 export VISUAL="$EDITOR"
-export PATH="$PATH:/etc/kubernetes/manually_installed_bin/:/usr/local/go/bin:/home/user/go/bin:/home/user/.local/bin"
+export PATH="$PATH:/etc/kubernetes/manually_installed_bin/:/usr/local/go/bin:/home/user/go/bin:~/.local/bin"

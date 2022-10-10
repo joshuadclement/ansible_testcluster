@@ -1,0 +1,64 @@
+- name: Clean all installed files
+  tags:
+    - never
+    - files
+  block:
+    - name: Clean all installed files, /etc/kubernetes (1/12)
+      ansible.builtin.file:
+        path: /etc/kubernetes
+        state: absent
+
+    - name: Clean all installed files, /home/user/.kube (2/12)
+      ansible.builtin.file:
+        path: /home/user/.kube
+        state: absent
+
+    - name: Clean all installed files, /root/.kube (3/12)
+      ansible.builtin.file:
+        path: /root/.kube
+        state: absent
+
+    - name: Clean all installed files, /etc/apt/sources.list.d/kubernetes.list (4/12)
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/kubernetes.list
+        state: absent
+
+    - name: Clean all installed files, /etc/apt/sources.list.d/crio-sources.list (5/12)
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/crio-sources.list
+        state: absent
+
+    - name: Clean all installed files, /usr/share/keyrings/libcontainers-archive-keyring.gpg (6/12)
+      ansible.builtin.file:
+        path: /usr/share/keyrings/libcontainers-archive-keyring.gpg
+        state: absent
+
+    - name: Clean all installed files, /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg (7/12)
+      ansible.builtin.file:
+        path: /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg
+        state: absent
+
+    - name: Clean all installed files, /etc/modules-load.d/k8s.conf (8/12)
+      ansible.builtin.file:
+        path: /etc/crio/crio.conf
+        state: absent
+
+    - name: Clean all installed files, /etc/modules-load.d/k8s.conf (9/12)
+      ansible.builtin.file:
+        path: /etc/modules-load.d/k8s.conf
+        state: absent
+
+    - name: Clean all installed files, /etc/sysctl.d/k8s.conf (10/12)
+      ansible.builtin.file:
+        path: /etc/sysctl.d/k8s.conf
+        state: absent
+
+    - name: Clean all installed files, /usr/local/bin/crictl (11/12)
+      ansible.builtin.file:
+        path: /usr/local/bin/crictl
+        state: absent
+
+    - name: Clean all installed files, /usr/local/bin/kubectl-calico (12/12)
+      ansible.builtin.file:
+        path: /usr/local/bin/kubectl-calico
+        state: absent

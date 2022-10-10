@@ -3,32 +3,36 @@
     - never
     - aptremove
   block:
-    - name: Uninstall packages, un-hold kubelet (1/4)
+    - name: Uninstall packages, un-hold kubelet (1/6)
       ansible.builtin.dpkg_selections:
         name: kubelet
         selection: install
         
-    - name: Uninstall packages, un-hold kubeadm (2/4)
+    - name: Uninstall packages, un-hold kubeadm (2/6)
       ansible.builtin.dpkg_selections:
         name: kubeadm
         selection: install
         
-    - name: Uninstall packages, un-hold kubectl (3/4)
+    - name: Uninstall packages, un-hold kubectl (3/6)
       ansible.builtin.dpkg_selections:
         name: kubectl
         selection: install
 
-    - name: Uninstall packages, stop kubelet (4/4)
+    - name: Uninstall packages, stop kubelet (4/6)
       ansible.builtin.systemd:
         name: kubelet
         state: stopped
+      # If there's a nonzero exit code here, it's probably already stopped
+      failed_when: False
         
-    - name: Uninstall packages, stop crio (5/4)
+    - name: Uninstall packages, stop crio (5/6)
       ansible.builtin.systemd:
         name: crio
         state: stopped
+      # If there's a nonzero exit code here, it's probably already stopped
+      failed_when: False
         
-    - name: Uninstall packages, uninstall (4/4)
+    - name: Uninstall packages, uninstall (6/6)
       ansible.builtin.apt:
         name:
           - cri-o
