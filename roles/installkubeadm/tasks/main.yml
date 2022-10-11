@@ -1,3 +1,5 @@
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/check_hosts.yml"
+
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/prepare.yml"
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/crio.yml"
@@ -9,3 +11,6 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/calico_init.yml"
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_node_init.yml"
+  tags:
+    - worker_nodes
+    - k8sinstall

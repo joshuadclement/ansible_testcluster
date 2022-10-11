@@ -34,7 +34,7 @@
     - k8sinstall
     - crio
   ansible.builtin.shell: |
-    /etc/kubernetes/manually_installed_bin/crictl --version | sed -e 's/.*\(v[0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
+    crictl --version | sed -e 's/.*\(v[0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
   register: crictl_installed_version
   failed_when: False
   changed_when: False
@@ -62,9 +62,9 @@
       state: absent
       path: /tmp/crictl.tar.gz
 
-- name: Check cri-o is installed and running with the correct version
+- name: Check cri-o {{ crio_version }} is installed and running
   ansible.builtin.shell: |
-    /etc/kubernetes/manually_installed_bin/crictl --runtime-endpoint unix:///var/run/crio/crio.sock version | grep RuntimeVersion | sed -e 's/.*\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
+    crictl --runtime-endpoint unix:///var/run/crio/crio.sock version | grep RuntimeVersion | sed -e 's/.*\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
   register: crio_installed_version
   tags:
     - k8sinstall
@@ -108,7 +108,7 @@
     ansible.builtin.apt:
       update_cache: True
       name:
-        - cri-o
+        - cri-o={{ crio_version }}
         - cri-o-runc
         - containernetworking-plugins
 

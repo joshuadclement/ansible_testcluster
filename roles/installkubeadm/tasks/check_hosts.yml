@@ -1,0 +1,4 @@
+- name: Check that there is exactly one host in the control_plane group
+  when: groups['control_plane'] | length != 1
+  ansible.builtin.debug:
+    msg: Error! There must be exactly one host in the control_plane group

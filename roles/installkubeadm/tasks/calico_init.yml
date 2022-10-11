@@ -1,17 +1,26 @@
+- name: Check calico installed
+  when: "'control_plane' in group_names"
+  ansible.builtin.shell: kubectl calico version | grep "Cluster Version" | wc -l
+  failed_when: False
+  changed_when: False
+  register: calico_result
+  
 - name: Install Calico in control_plane
   tags:
     - k8sinstall
     - calico
-  when: "'control_plane' in group_names"
+  when:
+    - "'control_plane' in group_names"
+    - calico_result.stdout == 0
   block:
-    - name: Install Calico, get manifest (1/6)
+    - name: Install Calico, get manifest (1/7)
       ansible.builtin.get_url:
         url: "{{ calico_manifest_url }}"
         dest: /tmp/tigera-operator.yaml
         checksum: "{{ calico_manifest_checksum }}"
 
     # Needs server_side_apply in order to avoid the annotations.last-applied-configuration too long error
-    - name: Install Calico, apply manifest (2/6)
+    - name: Install Calico, apply manifest (2/7)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True
@@ -21,12 +30,12 @@
           field_manager: kubectl
           force_conflicts: True
 
-    - name: Install Calico, copy config (3/6)
+    - name: Install Calico, copy config (3/7)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/tigera-custom-resources.yml.j2"
         dest: /tmp/tigera-custom-resources.yaml
 
-    - name: Install Calico, apply custom resource manifest (4/6)
+    - name: Install Calico, apply custom resource manifest (4/7)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True
@@ -36,22 +45,17 @@
           field_manager: kubectl
           force_conflicts: True
 
-    - name: Install Calico, clean up files (5/6)
+    - name: Install Calico, clean up files (5/7)
       ansible.builtin.file:
         path: /tmp/tigera-custom-resources.yaml
         state: absent
 
-    - name: Install Calico, clean up files (6/6)
+    - name: Install Calico, clean up files (6/7)
       ansible.builtin.file:
         path: /tmp/tigera-operator.yaml
         state: absent
 
-- name: Install calicoctl
-  tags:
-    - k8sinstall
-    - calico
-  block:
-    - name: Install calicoctl, fetch
+    - name: Install Calico, fetch calicoctl (7/7) 
       ansible.builtin.get_url:
         url: "{{ calicoctl_url }}"
         checksum: "{{ calicoctl_checksum }}"

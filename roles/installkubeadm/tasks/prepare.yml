@@ -104,6 +104,8 @@
         owner: root
         group: root
         mode: 0644
+      register: copied_firewall_rules
 
     - name: Set firewall rules, flush and reload rules (2/2)
+      when: copied_firewall_rules.changed
       ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X && iptables-restore < /etc/iptables/rules.v4

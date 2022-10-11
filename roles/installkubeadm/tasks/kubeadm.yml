@@ -1,4 +1,26 @@
+- name: Check kubelet version
+  ansible.builtin.shell: kubelet --version | sed 's/.*v\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
+  failed_when: False
+  changed_when: False
+  register: kubelet_version
+
+- name: Check kubeadm version
+  ansible.builtin.shell: kubeadm version | sed 's/.*GitVersion:\"v\([0-9]\+[.][0-9]\+[.][0-9]\+\).*/\1/'
+  failed_when: False
+  changed_when: False
+  register: kubeadm_version
+
+- name: Check kubectl version
+  ansible.builtin.shell: kubectl version --short | grep "Client Version" | sed 's/.*v\([0-9]\+[.][0-9]\+[.][0-9]\+\)/\1/'
+  failed_when: False
+  changed_when: False
+  register: kubectl_version
+
 - name: Install kubernetes bootstrapping parts
+  when:
+    - kubelet_version.stdout != kubernetes_version
+    - kubeadm_version.stdout != kubernetes_version
+    - kubectl_version.stdout != kubernetes_version
   tags:
     - k8sinstall
     - kubeadm
