@@ -13,9 +13,6 @@
   register: port_result
 
 - name: Initialize control plane
-  tags:
-    - k8sinstall
-    - control_plane
   when:
     - "'control_plane' in group_names"
     - kubectl_result.rc != 0

@@ -21,9 +21,6 @@
     - kubelet_version.stdout != kubernetes_version
     - kubeadm_version.stdout != kubernetes_version
     - kubectl_version.stdout != kubernetes_version
-  tags:
-    - k8sinstall
-    - kubeadm
   block:
     - name: Install kubernetes bootstrapping parts, get signing key (1/6)
       ansible.builtin.get_url:

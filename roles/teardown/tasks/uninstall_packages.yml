@@ -1,7 +1,4 @@
 - name: Uninstall packages
-  tags:
-    - never
-    - aptremove
   block:
     - name: Uninstall packages, un-hold kubelet (1/6)
       ansible.builtin.dpkg_selections:
@@ -22,14 +19,14 @@
       ansible.builtin.systemd:
         name: kubelet
         state: stopped
-      # If there's a nonzero exit code here, it's probably already stopped
+      # If there's a nonzero exit code here, it should be already stopped
       failed_when: False
         
     - name: Uninstall packages, stop crio (5/6)
       ansible.builtin.systemd:
         name: crio
         state: stopped
-      # If there's a nonzero exit code here, it's probably already stopped
+      # If there's a nonzero exit code here, it should be already stopped
       failed_when: False
         
     - name: Uninstall packages, uninstall (6/6)

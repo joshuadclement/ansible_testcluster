@@ -1,7 +1,4 @@
 - name: Drain worker nodes
-  tags:
-    - worker_nodes
-    - never
   when: "'control_plane' in group_names"
   block:
     - name: Drain worker nodes, get list of worker nodes (1/3)
@@ -9,6 +6,10 @@
       changed_when: False
       register: names_of_nodes
 
+    # names_of_nodes.stdout_lines is a list of the hostnames of each node in the cluster.
+    # `item` refers to the value of each element in the loop iterator,
+    # and ansible_hostname is the self-reported hostname ansible discovers when
+    # gathering facts.
     - name: Drain worker nodes, drain all (2/3)
       loop: "{{ names_of_nodes.stdout_lines }}"
       when: item != ansible_hostname
@@ -26,9 +27,6 @@
           {% else %} False {% endif %}
 
 - name: Reset worker nodes
-  tags:
-    - worker_nodes
-    - never
   when:
     - "'control_plane' not in group_names"
     - "not hostvars[groups['control_plane'][0]]['drain_failed_for_any_worker']"
@@ -49,9 +47,6 @@
       ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X < /etc/iptables/rules.v4
 
 - name: Remove worker nodes from control plane
-  tags:
-    - worker_nodes
-    - never
   when:
     - "'control_plane' in group_names"
     - "not drain_failed_for_any_worker"

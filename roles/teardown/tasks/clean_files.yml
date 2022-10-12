@@ -1,7 +1,4 @@
 - name: Clean all installed files
-  tags:
-    - never
-    - files
   block:
     - name: Clean all installed files, /etc/kubernetes (1/12)
       ansible.builtin.file:

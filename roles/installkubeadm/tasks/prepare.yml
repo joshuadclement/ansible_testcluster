@@ -1,7 +1,6 @@
 - name: Disable swap
   tags:
-    - sysprepare
-    - k8sinstall
+    - swap
   block:
 
   ### If swap is on, then `swapon --show` will output the swap devices in a table
@@ -29,9 +28,7 @@
 
 - name: Install/update system packages
   tags:
-    - sysprepare
     - sysupdate
-    - k8sinstall
   block:
   - name: Make sure packages are installed
     ansible.builtin.apt:
@@ -61,7 +58,7 @@
 
 - name: Setup shell
   tags:
-    - sysprepare
+    - shell
   block:
   - name: Copy zshrc for a nice command line experience
     loop:
@@ -86,7 +83,7 @@
 
 - name: Install python dependencies for ansible modules
   tags:
-    - sysprepare
+    - python
   block:
     - name: Install kubernetes module
       pip:
@@ -94,7 +91,6 @@
 
 - name: Set firewall rules
   tags:
-    - sysprepare
     - firewall
   block:
     - name: Set firewall rules, copy persistent files (1/2)

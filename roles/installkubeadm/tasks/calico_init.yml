@@ -6,9 +6,6 @@
   register: calico_result
   
 - name: Install Calico in control_plane
-  tags:
-    - k8sinstall
-    - calico
   when:
     - "'control_plane' in group_names"
     - calico_result.stdout == 0
