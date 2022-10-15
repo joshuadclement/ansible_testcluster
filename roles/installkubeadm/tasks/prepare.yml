@@ -38,6 +38,7 @@
         - zsh
         - net-tools
         - iptables-persistent
+        - jq
       state: present
   
   - name: Update

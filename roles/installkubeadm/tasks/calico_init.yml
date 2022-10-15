@@ -1,6 +1,6 @@
 - name: Check calico installed
   when: "'control_plane' in group_names"
-  ansible.builtin.shell: kubectl calico version | grep "Cluster Version" | wc -l
+  ansible.builtin.shell: kubectl calico version | grep "Cluster Version"
   failed_when: False
   changed_when: False
   register: calico_result
@@ -8,7 +8,7 @@
 - name: Install Calico in control_plane
   when:
     - "'control_plane' in group_names"
-    - calico_result.stdout == 0
+    - calico_result.stdout_lines | count == 0
   block:
     - name: Install Calico, get manifest (1/7)
       ansible.builtin.get_url:
