@@ -47,15 +47,14 @@
       upgrade: True
 
   - name: Check restart needed
-    ansible.builtin.shell: "[[ -f /var/run/reboot-required ]]"
-    failed_when: False
+    ansible.builtin.shell: /usr/lib/update-notifier/update-motd-reboot-required
     changed_when: False
     register: reboot_required
 
   - name: Notify restart needed
     ansible.builtin.debug:
-      msg: "***Reboot is required***"
-    when: reboot_required.rc == 0
+      msg: "{{ reboot_required.stdout }}"
+    when: reboot_required.stdout_lines | count > 0
 
 - name: Setup shell
   tags:
@@ -95,8 +94,8 @@
     - firewall
   block:
     - name: Set firewall rules, copy persistent files (1/2)
-      ansible.builtin.copy:
-        src: "{{ role_path }}/files/rules.v4"
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/rules.v4.j2"
         dest: "/etc/iptables/rules.v4"
         owner: root
         group: root
