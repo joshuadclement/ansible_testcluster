@@ -22,9 +22,9 @@
     - name: Save result of draining workers first (3/3)
       ansible.builtin.set_fact:
         drain_failed_for_any_worker: >
-          {% if names_of_nodes.stdout_lines | length > 0 %}
+          {%- if names_of_nodes.stdout_lines | length > 0 -%}
           {{ drain_result.results | map(attribute='failed', default=False) | map('bool') | flatten | max }}
-          {% else %} False {% endif %}
+          {%- else -%} False {%- endif -%}
 
 - name: Reset worker nodes
   when:
