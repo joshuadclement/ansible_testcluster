@@ -1,0 +1,29 @@
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/check_hosts.yaml"
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/prepare.yaml"
+  tags:
+    - sysprepare
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/crio.yaml"
+  tags:
+    - crio
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/kubeadm.yaml"
+  tags:
+    - kubeadm
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/control_plane_init.yaml"
+  tags:
+    - control_plane
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/calico_init.yaml"
+  tags:
+    - calico
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_node_init.yaml"
+  tags:
+    - worker_nodes
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/ingress.yaml"
+  tags:
+    - ingress

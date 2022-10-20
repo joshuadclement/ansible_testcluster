@@ -1,0 +1,21 @@
+# the `never` tag prevents a task from running unless one of its tags is
+# explicitly given. Call this playbook with `--tags=never` to run all of it.
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_nodes.yaml"
+  tags:
+    - never
+    - worker_nodes
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/control_plane.yaml"
+  tags:
+    - never
+    - control_plane
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/uninstall_packages.yaml"
+  tags:
+    - never
+    - aptremove
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/clean_files.yaml"
+  tags:
+    - never
+    - files

@@ -27,14 +27,14 @@
 
     - name: Initialize control plane, copy kubeadm config (2/5)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/kubeadm-config.yml.j2"
-        dest: /etc/kubernetes/kubeadm-config.yml
+        src: "{{ role_path }}/templates/kubeadm-config.yaml.j2"
+        dest: /etc/kubernetes/kubeadm-config.yaml
         owner: root
         group: root
         mode: 0644
 
     - name: Initialize control plane, initialize kubeadm (3/5)
-      ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yml 2>&1 > /var/log/kubeadm_init_output.txt
+      ansible.builtin.shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml 2>&1 > /var/log/kubeadm_init_output.txt
 
     - name: Initialize control plane, make config dirs (4/5)
       loop:

@@ -29,7 +29,7 @@
 
     - name: Install Calico, copy config (3/7)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/tigera-custom-resources.yml.j2"
+        src: "{{ role_path }}/templates/tigera-custom-resources.yaml.j2"
         dest: /tmp/tigera-custom-resources.yaml
 
     - name: Install Calico, apply custom resource manifest (4/7)
