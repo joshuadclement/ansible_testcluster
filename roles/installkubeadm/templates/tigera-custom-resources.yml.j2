@@ -15,7 +15,7 @@ spec:
       natOutgoing: Enabled
       nodeSelector: all()
     nodeAddressAutodetectionV4:
-      interface: {{ control_plane_internal_net_interface }}
+      interface: {{ trusted_network_interface }}
 
 ---
 

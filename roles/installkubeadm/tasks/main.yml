@@ -23,3 +23,7 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_node_init.yml"
   tags:
     - worker_nodes
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/ingress.yml"
+  tags:
+    - ingress

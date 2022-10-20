@@ -1,0 +1,93 @@
+- name: Ensure nodes have public IP labels
+  when: "'control_plane' in group_names"
+  block:
+    - name: Get list of nodes that have a public IP
+      ansible.builtin.set_fact:
+        nodes_with_public_IP: "{{ hostvars | dict2items |
+        map(attribute='value') |
+        selectattr('public_network_address', 'defined') |
+        map(attribute='ansible_hostname') }}"
+
+    - name: Apply labels to those nodes
+      loop: "{{ nodes_with_public_IP }}"
+      ansible.builtin.shell: |
+        kubectl label nodes {{ item }} hasPublicIP="true"
+    
+- name: Check ingress installed
+  when: "'control_plane' in group_names"
+  ansible.builtin.shell: kubectl get deployments -n ingress-nginx
+  failed_when: False
+  changed_when: False
+  register: ingress_deployments
+  
+- name: Install ingress
+  when:
+    - "'control_plane' in group_names"
+    - ingress_deployments.stdout_lines | count < 1
+  block:
+    - name: Install ingress, add helm repo
+      kubernetes.core.helm_repository:
+        name: k8s-ingress-nginx
+        repo_url: "https://kubernetes.github.io/ingress-nginx"
+
+    - name: Install ingress, install chart
+      kubernetes.core.helm:
+        update_repo_cache: True
+        release_name: ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: True
+        chart_ref: k8s-ingress-nginx/ingress-nginx
+        atomic: True
+        values: "{{ ingress_helm_values }}"
+
+- name: Check cert_manager installed
+  when: "'control_plane' in group_names"
+  ansible.builtin.shell: kubectl get deployments -n cert-manager
+  failed_when: False
+  changed_when: False
+  register: cert_manager_deployments
+
+- name: Install cert_manager
+  when:
+    - "'control_plane' in group_names"
+    - cert_manager_deployments.stdout_lines | count < 1
+  block:
+    - name: Install cert_manager, add helm repo
+      kubernetes.core.helm_repository:
+        name: jetstack
+        repo_url: "https://charts.jetstack.io"
+
+    - name: Install cert_manager, install chart
+      kubernetes.core.helm:
+        update_repo_cache: True
+        release_name: cert-manager
+        release_namespace: cert-manager
+        create_namespace: True
+        chart_ref: jetstack/cert-manager
+        atomic: True
+        values: "{{ cert_manager_helm_values }}"
+
+- name: Check cluster issuer installed
+  when: "'control_plane' in group_names"
+  ansible.builtin.shell: kubectl get clusterissuer
+  failed_when: False
+  changed_when: False
+  register: cluster_issuers
+
+- name: Create cluster issuer
+  when:
+    - "'control_plane' in group_names"
+    - cluster_issuers.stdout_lines | count < 1
+  block:
+    - name: Install cert_manager, copy issuer manifest
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/cluster-issuer.yaml.j2"
+        dest: /etc/kubernetes/manifests/cluster-issuer.yaml
+
+    - name: Install cert_manager, apply issuer manifest
+      kubernetes.core.k8s:
+        kubeconfig: "{{ k8s_admin_config }}"
+        apply: True
+        src: /etc/kubernetes/manifests/cluster-issuer.yaml
+        wait: True
+
