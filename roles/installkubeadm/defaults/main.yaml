@@ -1,5 +1,6 @@
 # Kubernetes
 pod_network_cidr: "10.2.0.0/16"
+trusted_network_cidr: "10.0.0.0/16"
 kubernetes_major_version: "1"
 kubernetes_minor_version: "25"
 kubernetes_patch_version: "2"

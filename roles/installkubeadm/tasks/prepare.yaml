@@ -39,6 +39,7 @@
         - net-tools
         - iptables-persistent
         - jq
+        - nfs-common
       state: present
   
   - name: Update
