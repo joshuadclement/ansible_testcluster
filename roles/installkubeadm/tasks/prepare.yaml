@@ -8,7 +8,7 @@
   ### get that table.
   - name: Check if swap enabled
     ansible.builtin.shell:
-      cmd: swapon --show | grep NAME
+      cmd: swapon --show
     register: swap_enabled
     failed_when: False
     changed_when: False
@@ -16,14 +16,14 @@
   - name: Disable swap since kubernetes can't work with swap enabled (1/2)
     ansible.builtin.shell:
       cmd: swapoff -a
-    when: swap_enabled == 0
+    when: swap_enabled.stdout_lines > 0
   
   - name: Disable swap in fstab since kubernetes can't work with swap enabled (2/2)
     replace:
       path: /etc/fstab
       regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
       replace: '# \1'
-    when: swap_enabled == 0
+    when: swap_enabled.stdout_lines > 0
 
 
 - name: Install/update system packages
