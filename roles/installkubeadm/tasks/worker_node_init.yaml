@@ -64,3 +64,22 @@
       {{ hostvars[groups['control_plane'][0]]['ca_cert_hash']['stdout'] }} |\
       tee /var/log/kubeadm_join_output.txt
   when: ansible_hostname in hostvars[groups['control_plane'][0]]['nodes_not_joined']
+
+- name: If no worker nodes, annotate the control plane node to allow it to schedule pods
+  when: groups['worker_nodes'] | count == 0
+  ansible.builtin.shell:
+    cmd: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+
+# By default, a control plane has a control-plane=NoSchedule taint, which prevents pods from being
+# scheduled on it. This replaces that taint with control-plane=PreferNoSchedule,
+# which means that if there is another node available, a new pod will be scheduled elsewhere, but if
+# the control plane is the only one, it can be scheduled there without specifying in the pod's manifest.
+# https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+- name: If there are worker nodes, re-annotate the control plane with a soft taint
+  when:
+    - groups['worker_nodes'] | count > 0
+    - "'control_plane' in group_names"
+  ansible.builtin.shell:
+    cmd: |
+      kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane- &&
+      kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane=PreferNoSchedule
