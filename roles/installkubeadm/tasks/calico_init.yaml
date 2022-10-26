@@ -10,49 +10,31 @@
     - "'control_plane' in group_names"
     - calico_result.stdout_lines | count == 0
   block:
-    - name: Install Calico, get manifest (1/7)
-      ansible.builtin.get_url:
-        url: "{{ calico_manifest_url }}"
-        dest: /tmp/tigera-operator.yaml
-        checksum: "{{ calico_manifest_checksum }}"
+    - name: Install calico, add helm repo (1/4)
+      kubernetes.core.helm_repository:
+        name: projectcalico
+        repo_url: "https://projectcalico.docs.tigera.io/charts"
 
-    # Needs server_side_apply in order to avoid the annotations.last-applied-configuration too long error
-    - name: Install Calico, apply manifest (2/7)
-      kubernetes.core.k8s:
-        kubeconfig: "{{ k8s_admin_config }}"
-        apply: True
-        src: /tmp/tigera-operator.yaml
-        wait: True
-        server_side_apply:
-          field_manager: kubectl
-          force_conflicts: True
-
-    - name: Install Calico, copy config (3/7)
+    - name: Install calico, copy values (2/4)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/tigera-custom-resources.yaml.j2"
-        dest: /tmp/tigera-custom-resources.yaml
+        src: "{{ role_path }}/templates/calico_helm_values.yaml.j2"
+        dest: /etc/kubernetes/helm_values/calico.yaml
+        owner: root
+        group: root
+        mode: 0640
 
-    - name: Install Calico, apply custom resource manifest (4/7)
-      kubernetes.core.k8s:
-        kubeconfig: "{{ k8s_admin_config }}"
-        apply: True
-        src: /tmp/tigera-custom-resources.yaml
-        wait: True
-        server_side_apply:
-          field_manager: kubectl
-          force_conflicts: True
+    - name: Install calico, install chart (3/4)
+      kubernetes.core.helm:
+        update_repo_cache: True
+        release_name: calico
+        release_namespace: tigera-operator
+        create_namespace: True
+        chart_ref: projectcalico/tigera-operator
+        atomic: True
+        values_files:
+          - /etc/kubernetes/helm_values/calico.yaml
 
-    - name: Install Calico, clean up files (5/7)
-      ansible.builtin.file:
-        path: /tmp/tigera-custom-resources.yaml
-        state: absent
-
-    - name: Install Calico, clean up files (6/7)
-      ansible.builtin.file:
-        path: /tmp/tigera-operator.yaml
-        state: absent
-
-    - name: Install Calico, fetch calicoctl (7/7) 
+    - name: Install Calico, fetch calicoctl (4/4)
       ansible.builtin.get_url:
         url: "{{ calicoctl_url }}"
         checksum: "{{ calicoctl_checksum }}"

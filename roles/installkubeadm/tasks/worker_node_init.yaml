@@ -80,6 +80,4 @@
     - groups['worker_nodes'] | count > 0
     - "'control_plane' in group_names"
   ansible.builtin.shell:
-    cmd: |
-      kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane- &&
-      kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane=PreferNoSchedule
+    cmd: kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane:PreferNoSchedule

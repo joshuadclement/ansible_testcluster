@@ -1,0 +1,15 @@
+installation:
+  enabled: true
+  kubernetesProvider: ""
+  cni:
+    type: Calico
+  calicoNetwork:
+    bgp: Disabled
+    ipPools:
+      - blockSize: 26
+        cidr: {{ pod_network_cidr }}
+        encapsulation: VXLANCrossSubnet
+        natOutgoing: Enabled
+        nodeSelector: all()
+    nodeAddressAutodetectionV4:
+      interface: {{ trusted_network_interface }}

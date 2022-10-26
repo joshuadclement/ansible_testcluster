@@ -75,31 +75,37 @@
     - "'control_plane' in group_names"
     - helm_installed_version.stdout != helm_version
   block:
-    - name: Install helm, fetch (1/5)
+    - name: Install helm, fetch (1/6)
       ansible.builtin.get_url:
         url: "{{ helm_binary_url }}"
         checksum: "{{ helm_binary_checksum }}"
         dest: /tmp/helm.tar.gz
 
-    - name: Install helm, extract (2/5)
+    - name: Install helm, extract (2/6)
       ansible.builtin.unarchive:
         remote_src: True
         src: /tmp/helm.tar.gz
         dest: /tmp
 
-    - name: Install helm, move (3/5)
+    - name: Install helm, move (3/6)
       ansible.builtin.copy:
         remote_src: True
         src: /tmp/linux-amd64/helm
         dest: /usr/local/bin/helm
         mode: 0751
 
-    - name: Install helm, clean (4/5)
+    - name: Install helm, clean (4/6)
       ansible.builtin.file:
         path: /tmp/helm.tar.gz
         state: absent
 
-    - name: Install helm, clean (5/5)
+    - name: Install helm, clean (5/6)
       ansible.builtin.file:
         path: /tmp/linux-amd64
         state: absent
+
+    - name: Install helm, make values directory (6/6)
+      ansible.builtin.file:
+        path: /etc/kubernetes/helm_values
+        state: directory
+        mode: 0750

@@ -1,0 +1,14 @@
+controller:
+  nodeSelector:
+    hasPublicIP: "true"
+  dnsPolicy: ClusterFirstWithHostNet
+  hostNetwork: True
+  hostPort:
+    enabled: True
+    ports:
+      http: 80
+      https: 443
+  service:
+    enabled: False
+  ingressClassResource:
+    default: True
