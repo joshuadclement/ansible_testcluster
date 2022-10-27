@@ -27,8 +27,17 @@ helm_binary_checksum: "sha256:c12d2cd638f2d066fec123d0bd7f010f32c643afdf288d39a4
 helm_version: "3.10.1"
 
 # Calico (Container Network Interface)
-calicoctl_url: "https://github.com/projectcalico/calico/releases/download/v3.24.1/calicoctl-linux-amd64"
-calicoctl_checksum: "sha256:10a36ebc7a4cf355b28e061f5a5f4b261daff4773a51ac73ca1071e7551a934a"
+calico_version: "v3.24.3"
+calicoctl_url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}/calicoctl-linux-amd64"
+calicoctl_checksum: "sha256:22d7ba5547aff1b4202ddd55952c1e5b6e45e416cd79e1721438aab54a23324a"
 
 # Cert_manager
 letsencrypt_email: "joshuaclement@deic.dk"
+
+# Docker registry
+docker_registry_node_port: 30001
+docker_registry_nfs_IP: "10.0.0.20"
+docker_registry_nfs_path: "/tank/storage/dockerregistry2"
+docker_registry_secret_hash: "am9kYWM6JGFwcjEkaWs3aE9RbVgkbDh2UEt0NVkwMDV4NmxxS2UyZGZVMQo="
+docker_registry_domain: "dockerregistry.clement.tel"
+docker_registry_tls_secret: "tls-dockerregistry-clement-tel"

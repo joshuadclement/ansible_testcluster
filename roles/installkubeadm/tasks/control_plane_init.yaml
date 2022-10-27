@@ -108,4 +108,12 @@
       ansible.builtin.file:
         path: /etc/kubernetes/helm_values
         state: directory
-        mode: 0750
+        mode: 0751
+
+- name: Create directory for custom manifests
+  when:
+    - "'control_plane' in group_names"
+  ansible.builtin.file:
+    path: /etc/kubernetes/custom_manifests
+    state: directory
+    mode: 0751
