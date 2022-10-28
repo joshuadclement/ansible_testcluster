@@ -1,0 +1,19 @@
+- name: Apply network policies
+  when:
+    - "'control_plane' in group_names"
+  block:
+    - name: Apply network policies, copy manifest (1/2)
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/network_policies.yaml.j2"
+        dest: /etc/kubernetes/custom_manifests/network_policies.yaml
+        owner: root
+        group: root
+        mode: 0640
+
+    - name: Apply network policies, apply manifest (2/2)
+      kubernetes.core.k8s:
+        kubeconfig: "{{ k8s_admin_config }}"
+        apply: True
+        src: /etc/kubernetes/custom_manifests/network_policies.yaml
+        wait: True
+

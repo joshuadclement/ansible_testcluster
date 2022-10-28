@@ -1,0 +1,71 @@
+- name: Fail if docker_registry_admin_password not defined
+  when:
+    - docker_registry_admin_password == ""
+    - "'control_plane' in group_names"
+  ansible.builtin.debug:
+    msg: "You need to define docker_registry_admin_password"
+  failed_when: True
+
+- name: Prepare secrets
+  when:
+    - "'control_plane' in group_names"
+  block:
+    - name: Prepare secrets, ensure directory exists
+      ansible.builtin.file:
+        path: /etc/kubernetes/custom_manifests/docker_registry
+        state: directory
+        owner: root
+        group: root
+        mode: 0751
+
+    - name: Prepare secrets, create htpasswd file
+      loop: "{{ docker_registry_auth | dict2items }}"
+      community.general.htpasswd:
+        path: /etc/kubernetes/custom_manifests/docker_registry/docker_htpasswd
+        mode: 0600
+        owner: root
+        group: root
+        name: "{{ item.key }}"
+        password: "{{ item.value }}"
+
+    - name: Prepare secrets, get copy of htpasswd
+      ansible.builtin.slurp:
+        src: /etc/kubernetes/custom_manifests/docker_registry/docker_htpasswd
+      register: docker_registry_htpasswd
+
+    - name: Prepare secrets, set login string for docker login config file
+      ansible.builtin.set_fact:
+        docker_registry_docker_login_string: "admin:{{ docker_registry_admin_password }}"
+
+    - name: Prepare secrets, create docker login config file
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/docker_login_config.json.j2"
+        dest: /etc/kubernetes/custom_manifests/docker_registry/docker_login_config.json
+        mode: 0600
+        owner: root
+        group: root
+
+    - name: Prepare secrets, get copy of docker login config file
+      ansible.builtin.slurp:
+        src: /etc/kubernetes/custom_manifests/docker_registry/docker_login_config.json
+      register: docker_registry_login_config
+
+- name: Create local docker registry
+  when:
+    - "'control_plane' in group_names"
+  block:
+       
+    - name: Create local docker registry, copy manifest (1/2)
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/docker_registry.yaml.j2"
+        dest: /etc/kubernetes/custom_manifests/docker_registry.yaml
+        owner: root
+        group: root
+        mode: 0640
+
+    - name: Create local docker registry, apply manifest (2/2)
+      kubernetes.core.k8s:
+        kubeconfig: "{{ k8s_admin_config }}"
+        apply: True
+        src: /etc/kubernetes/custom_manifests/docker_registry.yaml
+        wait: True

@@ -38,6 +38,8 @@ letsencrypt_email: "joshuaclement@deic.dk"
 docker_registry_node_port: 30001
 docker_registry_nfs_IP: "10.0.0.20"
 docker_registry_nfs_path: "/tank/storage/dockerregistry2"
-docker_registry_secret_hash: "am9kYWM6JGFwcjEkaWs3aE9RbVgkbDh2UEt0NVkwMDV4NmxxS2UyZGZVMQo="
+docker_registry_admin_password: ""
+docker_registry_auth:
+  admin: "{{ docker_registry_admin_password }}"
 docker_registry_domain: "dockerregistry.clement.tel"
 docker_registry_tls_secret: "tls-dockerregistry-clement-tel"

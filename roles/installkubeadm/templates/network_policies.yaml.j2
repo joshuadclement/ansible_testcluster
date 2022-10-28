@@ -1,0 +1,52 @@
+##########################################################################
+# Define HostEndpoints for each interface in the cluster
+# with labels for whether they have a trusted or a public IP address
+##########################################################################
+{% for host in groups.cluster %}
+{% if hostvars[host]['trusted_network_interface'] %}
+apiVersion: projectcalico.org/v3
+kind: HostEndpoint
+metadata:
+  name: {{ hostvars[host]['ansible_hostname'] }}-{{ hostvars[host]['trusted_network_interface'] }}
+  labels:
+    trusted-network: {{ hostvars[host]['ansible_hostname'] }}
+spec:
+  interfaceName: {{ hostvars[host]['trusted_network_interface'] }}
+  node: {{ hostvars[host]['ansible_hostname'] }}
+  expectedIPs:
+    - {{ hostvars[host]['trusted_network_address'] }}
+---
+{% endif %}
+{% if hostvars[host]['public_network_interface'] is defined %}
+apiVersion: projectcalico.org/v3
+kind: HostEndpoint
+metadata:
+  name: {{ hostvars[host]['ansible_hostname'] }}-{{ hostvars[host]['public_network_interface'] }}
+  labels:
+    public-network: {{ hostvars[host]['ansible_hostname'] }}
+spec:
+  interfaceName: {{ hostvars[host]['public_network_interface'] }}
+  node: {{ hostvars[host]['ansible_hostname'] }}
+  expectedIPs:
+    - {{ hostvars[host]['public_network_address'] }}
+---
+{% endif %}
+{% endfor %}
+
+##########################################################################
+# Define a default allow rule for all traffic once it gets to the cluster.
+# This should ideally be a default reject with rules created to allow.
+##########################################################################
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-default
+spec:
+  order: 99
+  ingress:
+    - action: Allow
+  egress:
+    - action: Allow
+  selector: all()
+---
+

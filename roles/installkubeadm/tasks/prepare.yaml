@@ -90,6 +90,11 @@
       pip:
         name: kubernetes
 
+    - name: Install passlib module
+      pip:
+        name: passlib
+
+
 - name: Set firewall rules
   tags:
     - firewall
