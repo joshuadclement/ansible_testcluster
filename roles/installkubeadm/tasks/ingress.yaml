@@ -100,12 +100,12 @@
     - name: Install cert_manager, copy issuer manifest (1/2)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/cluster-issuer.yaml.j2"
-        dest: /etc/kubernetes/manifests/cluster-issuer.yaml
+        dest: /etc/kubernetes/custom_manifests/cluster-issuer.yaml
 
     - name: Install cert_manager, apply issuer manifest (2/2)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True
-        src: /etc/kubernetes/manifests/cluster-issuer.yaml
+        src: /etc/kubernetes/custom_manifests/cluster-issuer.yaml
         wait: True
 
