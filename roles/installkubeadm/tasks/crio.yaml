@@ -93,7 +93,7 @@
     ansible.builtin.apt:
       update_cache: True
       name:
-        - cri-o={{ crio_version }}~0
+        - cri-o={{ crio_version }}~{{ crio_version_subpatch }}
         - cri-o-runc
         - containernetworking-plugins
 

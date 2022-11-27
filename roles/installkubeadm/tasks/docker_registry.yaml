@@ -18,6 +18,9 @@
         group: root
         mode: 0751
 
+    # The goal is to create an htpassword file that contains credentials for each of the users listed in the
+    # docker_registry_auth variable. The base64 encoded content of this file will be used in the docker_registry.yaml
+    # manifest to control authentication in the ingress.
     - name: Prepare secrets, create htpasswd file
       loop: "{{ docker_registry_auth | dict2items }}"
       community.general.htpasswd:
@@ -37,6 +40,9 @@
       ansible.builtin.set_fact:
         docker_registry_docker_login_string: "admin:{{ docker_registry_admin_password }}"
 
+    # This creates the credential storage json that a user will have when you run `docker login`
+    # The base64 encoded content of this file needs to be available as a secret in the sciencedata
+    # namespace, so that kubernetes can pass through the ingress authentication to pull the container images.
     - name: Prepare secrets, create docker login config file
       ansible.builtin.template:
         src: "{{ role_path }}/templates/docker_login_config.json.j2"

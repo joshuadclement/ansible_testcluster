@@ -1,0 +1,7 @@
+{
+  "auths": {
+    "{{ docker_registry_domain }}": {
+      "auth": "{{ docker_registry_docker_login_string | b64encode }}"
+    }
+  }
+}

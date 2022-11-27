@@ -22,12 +22,12 @@
     - kubeadm_version.stdout != kubernetes_version
     - kubectl_version.stdout != kubernetes_version
   block:
-    - name: Install kubernetes bootstrapping parts, get signing key (1/6)
+    - name: Install kubernetes bootstrapping parts, get signing key (1/7)
       ansible.builtin.get_url:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
       
-    - name: Install kubernetes bootstrapping parts, add sources (2/6)
+    - name: Install kubernetes bootstrapping parts, add sources (2/7)
       ansible.builtin.copy:
         src: "{{ role_path }}/files/kubernetes.list"
         dest: /etc/apt/sources.list.d/kubernetes.list
@@ -35,7 +35,7 @@
         group: root
         mode: 0644
 
-    - name: Install kubernetes bootstrapping parts, install packages (3/6)
+    - name: Install kubernetes bootstrapping parts, install packages (3/7)
       ansible.builtin.apt:
         update_cache: True
         name:
@@ -44,17 +44,21 @@
           - kubectl={{ kubernetes_version }}-00
         state: present
 
-    - name: Install kubernetes bootstrapping parts, hold package version constant (4/6)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (4/7)
       ansible.builtin.dpkg_selections:
         name: kubelet
         selection: hold
 
-    - name: Install kubernetes bootstrapping parts, hold package version constant (5/6)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (5/7)
       ansible.builtin.dpkg_selections:
         name: kubeadm
         selection: hold
 
-    - name: Install kubernetes bootstrapping parts, hold package version constant (6/6)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (6/7)
       ansible.builtin.dpkg_selections:
         name: kubectl
         selection: hold
+
+    - name: Install kubernetes bootstrapping parts, ensure kubelet is configured to use the internal network address (7/7)
+      ansible.builtin.shell: |
+        sed -i 's/\(Environment="KUBELET_CONFIG_ARGS=.*\)"$/\1 --node-ip={{ trusted_network_address }}"/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
