@@ -31,20 +31,17 @@
     - "'control_plane' not in group_names"
     - "not hostvars[groups['control_plane'][0]]['drain_failed_for_any_worker']"
   block:
-    - name: Reset worker nodes, reset (1/3)
+    - name: Reset worker nodes, reset (1/2)
       ansible.builtin.expect: 
         command: kubeadm reset
         responses:
           (.*)Are you sure you want to proceed(.*): "y"
       register: output
 
-    - name: Reset worker nodes, log kubeadm reset output (2/3)
+    - name: Reset worker nodes, log kubeadm reset output (2/2)
       ansible.builtin.copy:
         content: "{{ output.stdout }}"
         dest: /var/log/kubeadm_reset_output
-
-    - name: Reset worker nodes, reset iptables (3/3)
-      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X < /etc/iptables/rules.v4
 
 - name: Remove worker nodes from control plane
   when:

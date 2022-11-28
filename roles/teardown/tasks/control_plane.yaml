@@ -4,7 +4,7 @@
     # If this task runs on a host without kubeadm installed, the `expect` command
     # will fail. `failed_when` will only register that the task failed if the command
     # failed for a different reason.
-    - name: Tear down the cluster on the control plane, kubeadm reset (1/3)
+    - name: Tear down the cluster on the control plane, kubeadm reset (1/2)
       ansible.builtin.expect:
         command: kubeadm reset
         responses:
@@ -14,11 +14,8 @@
         - output.failed
         - '"The command was not found or was not executable" not in output.msg'
 
-    - name: Tear down the cluster on the control plane, log kubeadm reset output (2/3)
+    - name: Tear down the cluster on the control plane, log kubeadm reset output (2/2)
       when: '"stdout" in output'
       ansible.builtin.copy:
         content: "{{ output.stdout }}"
         dest: /var/log/kubeadm_reset_output
-
-    - name: Tear down the cluster on the control plane, reset iptables (3/3)
-      ansible.builtin.shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X && iptables-restore < /etc/iptables/rules.v4

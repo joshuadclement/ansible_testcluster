@@ -19,3 +19,6 @@
   tags:
     - never
     - files
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/networking.yaml"
+# use networking tag for the whole task file, or see the tasks file for more specific tags

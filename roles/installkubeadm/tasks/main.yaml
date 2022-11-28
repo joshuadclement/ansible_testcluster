@@ -1,6 +1,7 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/check_hosts.yaml"
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/prepare.yaml"
+# use sysprepare tag for the whole task file, or see the tasks file for more specific tags
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/crio.yaml"
   tags:

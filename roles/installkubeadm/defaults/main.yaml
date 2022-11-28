@@ -1,5 +1,5 @@
 # Kubernetes
-pod_network_cidr: "10.4.0.0/16"
+pod_network_cidr: "10.128.0.0/15"
 trusted_network_cidr: "10.0.0.0/16"
 kubernetes_major_version: "1"
 kubernetes_minor_version: "25"
@@ -47,5 +47,6 @@ docker_registry_tls_secret: "tls-dockerregistry-clement-tel"
 
 # Vlan
 vlan_interface_name: "vlan400"
-vlan_id_number: 400
+vlan_id_number: 300
 vlan_subnet_size: 16
+vlan_subnet: "10.2.0.0/{{ vlan_subnet_size }}"

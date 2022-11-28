@@ -1,0 +1,24 @@
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: sciencedata-no-nat
+spec:
+  cidr: {{ vlan_subnet }}
+  disabled: true
+---
+
+{% for host in groups.cluster %}
+{% if hostvars[host]['node_ip_pool'] %}
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: ippool-{{ hostvars[host]['ansible_hostname'] }}
+spec:
+  cidr: {{ hostvars[host]['node_ip_pool'] }}
+  nodeSelector: kubernetes.io/hostname == "{{ hostvars[host]['ansible_hostname'] }}"
+  vxlanMode: CrossSubnet
+  natOutgoing: True
+---
+
+{% endif %}
+{% endfor %}
