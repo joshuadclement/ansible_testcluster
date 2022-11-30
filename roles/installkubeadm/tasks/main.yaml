@@ -34,3 +34,7 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/docker_registry.yaml"
   tags:
     - docker_registry
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/user_pods_backend.yaml"
+  tags:
+    - user_pods

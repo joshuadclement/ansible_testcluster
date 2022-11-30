@@ -1,4 +1,61 @@
 ##########################################################################
+# Define network policies for the sciencedata and sciencedata-dev namespaces
+# default allow external, reject internal, and reject the trusted silo net
+##########################################################################
+
+{% for ns in ['sciencedata', 'sciencedata-dev'] %}
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: sciencedata-network
+  namespace: {{ ns }}
+spec:
+  order: 0
+  selector: all()
+  egress:
+# Deny traffic to the trusted silo subnet
+    - action: Deny
+      destination:
+        nets:
+          - {{ trusted_silo_cidr }}
+# Allow traffic to the internal kubernetes dns server
+    - action: Allow
+      destination:
+        namespaceSelector:
+          projectcalico.org/name == 'kube-system'
+        selector: k8s-app == 'kube-dns'
+# Deny all other traffic to kubernetes components
+    - action: Deny
+      destination:
+        namespaceSelector: all()
+        selector: all()
+# Allow what remains (external only)
+---
+{% endfor %}
+
+##########################################################################
+# Globally prohibit traffic to the trusted network, expect for kube-system
+# which needs to access the dns server in the local gateway
+##########################################################################
+
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-private
+spec:
+  order: 0
+  selector: all()
+  namespaceSelector: projectcalico.org/name != 'kube-system'
+  egress:
+    - action: Deny
+      destination:
+        nets:
+          - {{ trusted_silo_cidr }}
+    - action: Allow
+---
+
+
+##########################################################################
 # Define HostEndpoints for each interface in the cluster
 # with labels for whether they have a trusted or a public IP address
 ##########################################################################
@@ -35,12 +92,11 @@ spec:
 
 ##########################################################################
 # Define a default allow rule for all traffic once it gets to the cluster.
-# This should ideally be a default reject with rules created to allow.
 ##########################################################################
 apiVersion: projectcalico.org/v3
 kind: GlobalNetworkPolicy
 metadata:
-  name: allow-default
+  name: default-allow
 spec:
   order: 99
   ingress:
