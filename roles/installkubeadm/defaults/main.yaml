@@ -51,8 +51,8 @@ docker_registry_tls_secret: "tls-dockerregistry-clement-tel"
 # Vlan
 vlan_interface_name: "vlan300"
 vlan_id_number: 300
-vlan_subnet_size: 16
-vlan_subnet: "10.2.0.0/{{ vlan_subnet_size }}"
+vlan_subnet_mask: 16
+vlan_subnet_cidr: "10.2.0.0/{{ vlan_subnet_mask }}"
 
 # user_pods_backend
 backend_manifests_dir: "~/go/src/github.com/deic.dk/kubernetes_backend/manifests"

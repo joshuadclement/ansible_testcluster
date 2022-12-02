@@ -106,7 +106,7 @@
     - sysprepare
   ansible.builtin.shell: |
     ip link add link {{ trusted_network_interface }} name {{ vlan_interface_name }} type vlan id {{ vlan_id_number }}
-    ip addr add {{ vlan_network_address }}/{{ vlan_subnet_size }} dev {{ vlan_interface_name }}
+    ip addr add {{ vlan_network_address }}/{{ vlan_subnet_mask }} dev {{ vlan_interface_name }}
     ip link set dev {{ vlan_interface_name }} up
 
 - name: Set firewall rules
