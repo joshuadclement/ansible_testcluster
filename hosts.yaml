@@ -1,19 +1,19 @@
 all:
   hosts:
     worker3.sciencedata.dk:
-      trusted_network_address: "10.0.0.131"
+      trusted_network_address: "10.0.0.192"
       public_network_address: "130.226.137.135"
       trusted_network_interface: "enp6s4f1"
       public_network_interface: "enp0s9"
-      vlan_network_address: "10.2.0.131"
+      vlan_network_address: "10.2.0.192"
       vlan_interface_name: "vlan300"
-      node_ip_pool: "10.128.0.0/16"
+      node_ip_pool: "10.192.0.0/16"
     worker5.sciencedata.dk:
-      trusted_network_address: "10.0.0.129"
+      trusted_network_address: "10.0.0.193"
       trusted_network_interface: "enp6s4f1"
-      vlan_network_address: "10.2.0.129"
+      vlan_network_address: "10.2.0.193"
       vlan_interface_name: "vlan300"
-      node_ip_pool: "10.129.0.0/16"
+      node_ip_pool: "10.193.0.0/16"
   children:
     cluster:
       hosts:
