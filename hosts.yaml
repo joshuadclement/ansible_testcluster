@@ -22,8 +22,6 @@ all:
     control_plane:
       hosts:
         worker5.sciencedata.dk:
-      vars:
-        docker_registry_admin_password: ""
     worker_nodes:
       hosts:
         worker3.sciencedata.dk:

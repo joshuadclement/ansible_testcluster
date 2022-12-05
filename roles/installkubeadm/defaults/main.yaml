@@ -50,3 +50,11 @@ vlan_interface_name: "vlan400"
 vlan_id_number: 300
 vlan_subnet_size: 16
 vlan_subnet: "10.2.0.0/{{ vlan_subnet_size }}"
+
+# user_pods_backend
+backend_manifests_dir: "~/go/src/github.com/deic.dk/kubernetes_backend/manifests"
+backend_readonly_pv_nfs_ip: "10.0.0.20"
+backend_ingress_domain: "pods.clement.tel"
+backend_ingress_domain_testing: "testpods.clement.tel"
+backend_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFFaL0dy3Dq4DA5GCqFBKVWZntBSF0RIeVd9/qdhIj2n"
+cloudflare_api_token: ""
