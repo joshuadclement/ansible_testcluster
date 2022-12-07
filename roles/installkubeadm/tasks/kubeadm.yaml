@@ -61,4 +61,4 @@
 
     - name: Install kubernetes bootstrapping parts, ensure kubelet is configured to use the internal network address (7/7)
       ansible.builtin.shell: |
-        sed -i 's/\(Environment="KUBELET_CONFIG_ARGS=.*\)"$/\1 --node-ip={{ trusted_network_address }}"/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+        sed -i 's/\(Environment="KUBELET_CONFIG_ARGS=[^ ]*\)\( --node-ip.*\)\?"$/\1 --node-ip={{ trusted_network_address }}"/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf

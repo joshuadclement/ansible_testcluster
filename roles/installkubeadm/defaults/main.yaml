@@ -1,6 +1,9 @@
 # Kubernetes
 pod_network_cidr: "10.128.0.0/15"
-trusted_network_cidr: "10.0.0.0/24"
+trusted_network_gateway: "10.0.0.1"
+trusted_network_nameserver: "10.0.0.1"
+trusted_network_mask: "24"
+trusted_network_cidr: "10.0.0.0/{{ trusted_network_mask }}"
 #  split network cidr into segment for silos and segment for cluster nodes
 trusted_silo_cidr: "10.0.0.0/25"
 trusted_cluster_cidr: "10.0.0.128/25"
@@ -49,9 +52,9 @@ docker_registry_domain: "dockerregistry.clement.tel"
 docker_registry_tls_secret: "tls-dockerregistry-clement-tel"
 
 # Vlan
-vlan_interface_name: "vlan300"
+vlan_interface: "vlan300"
 vlan_id_number: 300
-vlan_subnet_mask: 16
+vlan_subnet_mask: 24
 vlan_subnet_cidr: "10.2.0.0/{{ vlan_subnet_mask }}"
 
 # user_pods_backend

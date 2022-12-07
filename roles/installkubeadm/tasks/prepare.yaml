@@ -100,14 +100,22 @@
       pip:
         name: passlib
 
-- name: Create vlan
+- name: Configure netplan
   tags:
-    - vlan
     - sysprepare
-  ansible.builtin.shell: |
-    ip link add link {{ trusted_network_interface }} name {{ vlan_interface_name }} type vlan id {{ vlan_id_number }}
-    ip addr add {{ vlan_network_address }}/{{ vlan_subnet_mask }} dev {{ vlan_interface_name }}
-    ip link set dev {{ vlan_interface_name }} up
+    - netplan
+  block:
+    - name: Configure netplan, copy template (1/2)
+      ansible.builtin.template:
+        src: "{{ role_path }}/templates/01-netcfg.yaml.j2"
+        dest: "/etc/netplan/01-netcfg.yaml"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Configure netplan, apply the configuration (2/2)
+      ansible.builtin.shell: netplan apply
+
 
 - name: Set firewall rules
   tags:

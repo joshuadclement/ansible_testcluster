@@ -27,9 +27,8 @@
   tags:
     - ingress
 
-- ansible.builtin.import_tasks: "{{ role_path }}/tasks/network_policies.yaml"
-  tags:
-    - network_policies
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/network.yaml"
+# use network tag for the whole task file, or see the tasks file for more specific tags
 
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/docker_registry.yaml"
   tags:

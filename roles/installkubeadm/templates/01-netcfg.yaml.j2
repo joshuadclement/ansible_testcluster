@@ -1,0 +1,38 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+{% if trusted_network_interface is defined %}
+    {{ trusted_network_interface }}:
+      dhcp4: no
+      addresses:
+        - {{ trusted_network_address }}/24
+{% if not public_network_interface is defined %}
+      routes:
+        - via: {{ trusted_network_gateway }}
+          on-link: true
+          to: default
+{% endif %}
+      nameservers:
+        addresses:
+          - {{ trusted_network_nameserver }}
+{% endif %}
+{% if public_network_interface is defined %}
+    {{ public_network_interface }}:
+      dhcp4: no
+      addresses:
+        - {{ public_network_address }}/{{ public_network_address_mask }}
+      routes:
+        - via: {{ public_network_gateway }}
+          on-link: true
+          to: default
+{% endif %}
+{% if vlan_interface is defined %}
+  vlans:
+    {{ vlan_interface }}:
+      id: {{ vlan_id_number }}
+      link: {{ trusted_network_interface }}
+      addresses:
+        - {{ vlan_network_address }}/{{ vlan_subnet_mask }}
+{% endif %}
+
