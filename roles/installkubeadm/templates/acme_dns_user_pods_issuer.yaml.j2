@@ -1,0 +1,83 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: user-pods-issuer
+  namespace: sciencedata
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ letsencrypt_email }}
+    privateKeySecretRef:
+      name: dns01-issuer-privatekey
+    solvers:
+      - dns01:
+          acmeDNS:
+            host: http://{{ acmedns_hostname }}
+            accountSecretRef:
+              name: acme-dns-registration
+              key: registration.json
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: user-pods-issuer
+  namespace: sciencedata-dev
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ letsencrypt_email }}
+    privateKeySecretRef:
+      name: dns01-issuer-privatekey
+    solvers:
+      - dns01:
+          acmeDNS:
+            host: http://{{ acmedns_hostname }}
+            accountSecretRef:
+              name: acme-dns-registration
+              key: registration.json
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: sciencedata
+  name: acme-dns-registration
+data:
+  registration.json: {{ acmedns_sdpods_json | to_json | b64encode }}
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: sciencedata-dev
+  name: acme-dns-registration
+data:
+  registration.json: {{ acmedns_sdtestpods_json | to_json | b64encode }}
+type: Opaque
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: user-pods-wildcard
+  namespace: sciencedata
+spec:
+  secretName: user-pods-wildcard
+  issuerRef:
+    name: user-pods-issuer
+    kind: Issuer
+  commonName: "*.{{ backend_ingress_domain }}"
+  dnsNames:
+    - "*.{{ backend_ingress_domain }}"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: user-pods-wildcard
+  namespace: sciencedata-dev
+spec:
+  secretName: user-pods-wildcard
+  issuerRef:
+    name: user-pods-issuer
+    kind: Issuer
+  commonName: "*.{{ backend_ingress_domain_testing }}"
+  dnsNames:
+    - "*.{{ backend_ingress_domain_testing }}"

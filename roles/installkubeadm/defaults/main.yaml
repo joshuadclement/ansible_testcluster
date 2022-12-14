@@ -64,3 +64,15 @@ backend_ingress_domain: "pods.clement.tel"
 backend_ingress_domain_testing: "testpods.clement.tel"
 backend_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFFaL0dy3Dq4DA5GCqFBKVWZntBSF0RIeVd9/qdhIj2n"
 cloudflare_api_token: ""
+
+# acme-dns
+# The domain zone that the NS is responsible for serving records for
+acmedns_zone: "acme.clement.tel"
+# The domain where the NS is found (which ingress should receive traffic for)
+acmedns_hostname: "dns01.clement.tel"
+acmedns_nfs_IP: "10.0.0.20"
+acmedns_nfs_path: "/tank/storage/acmedns"
+acmedns_admin_email: "joshuaclement@deic.dk"
+acmedns_host_http_port: "15380"
+# The name as given in hosts.yaml
+acmedns_node: "worker3.sciencedata.dk"

@@ -37,3 +37,7 @@
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/user_pods_backend.yaml"
   tags:
     - user_pods
+
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/acme_dns.yaml"
+  tags:
+    - acme_dns
