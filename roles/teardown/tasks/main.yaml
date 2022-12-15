@@ -1,5 +1,9 @@
 # the `never` tag prevents a task from running unless one of its tags is
 # explicitly given. Call this playbook with `--tags=never` to run all of it.
+- ansible.builtin.import_tasks: "{{ role_path }}/tasks/backup_certs.yaml"
+  tags:
+    - backup_certs
+
 - ansible.builtin.import_tasks: "{{ role_path }}/tasks/worker_nodes.yaml"
   tags:
     - never

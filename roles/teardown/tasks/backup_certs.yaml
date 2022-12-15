@@ -1,0 +1,25 @@
+- name: Backup certificates and other tokens
+  when: "'control_plane' in group_names"
+  block:
+    - name: Ensure a backup directory exists
+      ansible.builtin.file:
+        path: "/root/kubernetesbackup"
+        owner: root
+        group: root
+        state: directory
+
+    # The actual certificate is stored in a secret, and a 'certificate' api object only triggers a letsencrypt
+    # challenge if the secret doens't exist with a valid cert.
+    - name: Backup tls certs so that they won't need to be reissued by letsencrypt (ratelimited)
+      ansible.builtin.shell: |
+        kubectl get secret --all-namespaces --field-selector type=kubernetes.io/tls -o yaml | yq '.items[] | split_doc' > /root/kubernetesbackup/backupcerts.yaml
+        sed -i '/last-applied-configuration/d' /root/kubernetesbackup/backupcerts.yaml
+        sed -i '/{"apiVersion":/d' /root/kubernetesbackup/backupcerts.yaml
+        sed -i '/resourceVersion/d' /root/kubernetesbackup/backupcerts.yaml
+        sed -i '/uid/d' /root/kubernetesbackup/backupcerts.yaml
+        sed -i '/creationTimestamp/d' /root/kubernetesbackup/backupcerts.yaml
+
+    - name: Backup acme_dns registration json
+      ansible.builtin.shell: |
+        cp /etc/kubernetes/custom_manifests/acme_dns_sdpods.json /root/kubernetesbackup/acme_dns_sdpods.json
+        cp /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json /root/kubernetesbackup/acme_dns_sdtestpods.json

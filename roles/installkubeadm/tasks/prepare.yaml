@@ -43,6 +43,12 @@
         - jq
         - nfs-common
       state: present
+
+  - name: Make sure necessary snap packages are installed
+    community.general.snap:
+      name:
+        - yq
+      state: present
   
   - name: Update
     ansible.builtin.apt:

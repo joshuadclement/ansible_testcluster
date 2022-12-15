@@ -15,6 +15,7 @@
 -A INPUT -p tcp --dport 443 -j ACCEPT
 {% if public_network_address is defined -%}
 -A INPUT -s {{ public_network_address }} -j ACCEPT
+-A INPUT -i {{ public_network_interface }} -p tcp --dport {{ acmedns_host_http_port }} -j DROP
 {% endif -%}
 {% if public_network_interface is defined -%}
 -A INPUT -i {{ public_network_interface }} -j DROP

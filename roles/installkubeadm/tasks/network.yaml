@@ -83,7 +83,7 @@
   when:
     - "'control_plane' in group_names"
   block:
-    - name: Apply network policies, copy manifest (1/4)
+    - name: Apply network policies, copy manifest (1/5)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/network_policies.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/network_policies.yaml
@@ -91,7 +91,7 @@
         group: root
         mode: 0640
 
-    - name: Apply network policies, create namespaces where policies should apply (2/4)
+    - name: Apply network policies, create namespaces where policies should apply (2/5)
       loop: ["sciencedata", "sciencedata-dev"]
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
@@ -100,7 +100,7 @@
         state: present
         api_version: v1
 
-    - name: Apply network policies, wait until calico deployments are ready after reboot (3/4)
+    - name: Apply network policies, wait until calico deployments are ready after reboot (3/5)
       loop: [{"namespace": "calico-apiserver", "name": "calico-apiserver"}, {"namespace": "calico-system", "name": "calico-kube-controllers"}, {"namespace": "calico-system", "name": "calico-typha"}]
       kubernetes.core.k8s:
         wait: True
@@ -113,7 +113,10 @@
         namespace: "{{ item.namespace }}"
         state: present
 
-    - name: Apply network policies, apply manifest (4/4)
+    - name: Apply network policies, sleep for good measure (not sure what needs to get ready before this will work) (4/5)
+      ansible.builtin.shell: sleep 45
+
+    - name: Apply network policies, apply manifest (4/5)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True

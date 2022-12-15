@@ -25,13 +25,13 @@
     - "'control_plane' in group_names"
   block:
     # First deploy the dns server itself, with the necessary ingress, PV, PVC and configuration
-    - name: Install acme-dns, check if dns server needs to be deployed
+    - name: Install acme-dns, check if dns server needs to be deployed (1/8)
       ansible.builtin.shell: |
         kubectl get deployment -n acme-dns | grep acme-dns
       failed_when: false
       register: acmedns_check_deployment_exists
 
-    - name: Install acme-dns, copy manifest
+    - name: Install acme-dns, copy manifest (2/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       ansible.builtin.template:
         src: "{{ role_path }}/templates/deploy_acme_dns.yaml.j2"
@@ -40,7 +40,7 @@
         owner: root
         group: root
 
-    - name: Install acme-dns, apply manifest
+    - name: Install acme-dns, apply manifest (3/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
@@ -48,13 +48,20 @@
         src: /etc/kubernetes/custom_manifests/acme_dns.yaml
         wait: True
 
-    - name: Install acme-dns, wait a minute for the dns server to get ready
+    - name: Install acme-dns, wait a minute for the dns server to get ready (4/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       ansible.builtin.shell: sleep 60
 
+    - name: Install acme-dns, copy registration json from backup if it exists (5/8)
+      ansible.builtin.shell: |
+        [[ -f /root/kubernetesbackup/acme_dns_sdpods.json ]] && \
+        cp /root/kubernetesbackup/acme_dns_sdpods.json /etc/kubernetes/custom_manifests/acme_dns_sdpods.json
+        [[ -f /root/kubernetesbackup/acme_dns_sdtestpods.json ]] && \
+        cp /root/kubernetesbackup/acme_dns_sdtestpods.json /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json
+
       # Then perform registration with a curl request on the control plane node.
       # TODO modify this part if there are ever multiple nodes in the control plane.
-    - name: Install acme-dns, register if not done for both pods and testpods subdomains
+    - name: Install acme-dns, register if not done for both pods and testpods subdomains (6/8)
       ansible.builtin.shell: |
         [[ -f /etc/kubernetes/custom_manifests/acme_dns_sdpods.json ]] || \
         curl -X POST http://{{ acmedns_hostname }}/register \
@@ -70,11 +77,11 @@
         executable: /bin/bash
 
       # Copy the json files with the registered credentials into variables in the control plane host's scope
-    - name: Install acme-dns, get json for pods subdomain
+    - name: Install acme-dns, get json for pods subdomain (7/8)
       ansible.builtin.shell: cat /etc/kubernetes/custom_manifests/acme_dns_sdpods.json
       register: acmedns_sdpods_registration
 
-    - name: Install acme-dns, get json for testpods subdomain
+    - name: Install acme-dns, get json for testpods subdomain (8/8)
       ansible.builtin.shell: cat /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json
       register: acmedns_sdtestpods_registration
 
@@ -109,7 +116,7 @@
   block:
     # Then with the dns server and records ready to respond to DNS01 challenges, create the ingress dependencies for
     # the user pods backend
-    - name: Install acme-dns, create issuer manifest
+    - name: Install acme-dns, create issuer manifest (1/2)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/acme_dns_user_pods_issuer.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/acme_dns_user_pods_issuer.yaml
@@ -117,7 +124,7 @@
         owner: root
         group: root
 
-    - name: Install acme-dns, apply the manifest
+    - name: Install acme-dns, apply the manifest (2/2)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
         apply: True
