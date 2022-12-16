@@ -106,3 +106,30 @@ spec:
   selector: all()
 ---
 
+
+##########################################################################
+# Block external http traffic to the acme-dns server
+# It needs to bind to the host network in order to serve port 53 externally,
+# so http needs to bind to a high port. Ingress can control access proxied
+# through 80/443, but this policy will block access to the high port itself.
+##########################################################################
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: restrict-acme-dns
+spec:
+  order: 1
+  selector: has(public-network)
+  ingress:
+    - action: Deny
+      protocol: TCP
+      source:
+        notNets:
+          - 127.0.0.0/8
+          - {{ trusted_network_cidr }}
+          - {{ vlan_subnet_cidr }}
+          - {{ pod_network_cidr }}
+      destination:
+        ports:
+          - {{ acmedns_host_http_port }}
+---
