@@ -35,6 +35,7 @@
         group: root
         mode: 0644
 
+      # apt install kubelet=x.y.z-00 kubeadm=x.y.z-00...
     - name: Install kubernetes bootstrapping parts, install packages (3/7)
       ansible.builtin.apt:
         update_cache: True
@@ -44,6 +45,7 @@
           - kubectl={{ kubernetes_version }}-00
         state: present
 
+      # apt-mark hold kubelet kubeadm kubectl
     - name: Install kubernetes bootstrapping parts, hold package version constant (4/7)
       ansible.builtin.dpkg_selections:
         name: kubelet

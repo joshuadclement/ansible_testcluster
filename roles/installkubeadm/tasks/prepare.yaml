@@ -1,37 +1,20 @@
-- name: Disable swap
+  ### If swap is on, then turn it off and comment out its entry in /etc/fstab
+- name: Check if swap enabled
   tags:
     - swap
     - sysprepare
-  block:
-
-  ### If swap is on, then `swapon --show` will output the swap devices in a table
-  ### started with NAME. The grep command will have a nonzero exit code if it doesn't
-  ### get that table.
-  - name: Check if swap enabled
-    ansible.builtin.shell:
-      cmd: swapon --show
-    register: swap_enabled
-    failed_when: False
-    changed_when: False
-  
-  - name: Disable swap since kubernetes can't work with swap enabled (1/2)
-    ansible.builtin.shell:
-      cmd: swapoff -a
-    when: swap_enabled.stdout_lines | count > 0
-  
-  - name: Disable swap in fstab since kubernetes can't work with swap enabled (2/2)
-    replace:
-      path: /etc/fstab
-      regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
-      replace: '# \1'
-    when: swap_enabled.stdout_lines | count > 0
-
+  ansible.builtin.shell: |
+    [[ $(swapon --show) ]] && swapoff -a && sed -i 's/^\([^#].*?\sswap\s+sw\s+.*\)$/# \1/'
+  args:
+    executable: /bin/bash
+  failed_when: False
 
 - name: Install/update system packages
   tags:
     - sysupdate
     - sysprepare
   block:
+    # apt install python3-pip ...
   - name: Make sure packages are installed
     ansible.builtin.apt:
       update_cache: True
@@ -44,12 +27,15 @@
         - nfs-common
       state: present
 
+    # snap install yq ...
+    ### yq is only distributed through snap in ubuntu, don't ask me why
   - name: Make sure necessary snap packages are installed
     community.general.snap:
       name:
         - yq
       state: present
   
+    # apt update && apt dist-upgrade
   - name: Update
     ansible.builtin.apt:
       update_cache: True
@@ -60,16 +46,21 @@
     changed_when: False
     register: reboot_required
 
+    # Like [[ $(/.../update-motd-reboot-required) ]] && ..
+    # except that this will put the notification to update in the stdout where someone is running the ansible playbook.
   - name: Notify restart needed
     ansible.builtin.debug:
       msg: "{{ reboot_required.stdout }}"
     when: reboot_required.stdout_lines | count > 0
 
+  # Not necessary, but I like having easy search through previously typed commands in the shell.
+  # Remove this block if you don't want it, or add "--skip-tags=zsh" when running it.
 - name: Setup shell
   tags:
-    - shell
+    - zsh
     - sysprepare
   block:
+    # scp zshrc host:/home/user/.zshrc && scp zshrc host:/root/.zshrc && set owner & permissions correctly
   - name: Copy zshrc for a nice command line experience
     loop:
       - username: "user"
@@ -83,6 +74,7 @@
       group: "{{ item.username }}"
       mode: 0644
   
+    # usermod
   - name: Set user shell
     loop:
       - "user"
@@ -96,12 +88,14 @@
     - python
     - sysprepare
   block:
+      # pip install kubernetes
     - name: Install kubernetes module
       pip:
         name: kubernetes
 
-    # dependency of the community.general.htpasswd ansible module
-    # necessary for generating the docker-registry htpasswd
+      # pip install passlib
+      # dependency of the community.general.htpasswd ansible module
+      # necessary for generating the docker-registry htpasswd
     - name: Install passlib module
       pip:
         name: passlib

@@ -4,24 +4,15 @@
   changed_when: False
   register: print_nodes
 
+  # Create an ansible variable that is a list of hostnames of the worker nodes that are joined
 - name: Get list of joined worker nodes (2/2)
   when: "'control_plane' in group_names"
   ansible.builtin.set_fact:
     nodes_that_are_joined: "{{ print_nodes.stdout_lines }}"
 
-# Register nodes_that_should_be_joined in the scope of the control plane host.
-# `hostvars` is a dict of `inventory_hostname`=>dict{all defined variables in its scope}.
-# The name of the node in kubernetes is the hostname as saved on the machine's /etc/hosts,
-# which is saved as an ansible fact in e.g.
-# hostvars['workerX.sciencedata.dk']['ansible_hostname'].
-# This chain of filters proceeds as follows:
-#   hostvars: {inventory_hostname: {... ansible_hostname: 'its hostname from /etc/hosts'}}
-#   dict2items(hostvars) <- [{key: inventory_hostname, value: {... ansible_hostname:...}}]
-#   selectattr keeps only the entries in the list whose `key` exists in the
-#     worker_nodes group (i.e. discards the hostvars of non-worker nodes)
-#   map(attribute='value') applies the attr('value') filter on each element in the list,
-#     resulting in [{... ansible_hostname: 'its hostname from /etc/hosts'}]
-#   map(attribute='ansible_hostname') returns ['its hostname from /etc/hosts']
+
+  # Create an ansible variable that is a list of all the hostnames of the hosts in the 'worker_nodes' group.
+  # Not the hostname reached by ssh, but the hostname the host itself knows and uses inside the cluster.
 - name: Get list of nodes that should be joined
   when: "'control_plane' in group_names"
   ansible.builtin.set_fact:
@@ -29,31 +20,36 @@
     selectattr('key', 'in', groups['worker_nodes']) |
     map(attribute='value') | map(attribute='ansible_hostname') }}"
 
+  # Create an ansible variable with the list of nodes that should be joined minus the nodes that already are
 - name: Get list of nodes that should be joined but are not yet
   when: "'control_plane' in group_names"
   ansible.builtin.set_fact:
     nodes_not_joined: "{{ nodes_that_should_be_joined |
     reject('in', nodes_that_are_joined) }}"
 
+  # If there is at least one worker node that needs to join
 - name: Get tokens for nodes to join
   when: 
     - "'control_plane' in group_names"
     - nodes_not_joined | count > 0
   block:
+      # Create a token and save the output as an ansible variable
     - name: Get tokens for nodes to join, create token (1/2)
       ansible.builtin.shell: kubeadm token create
       register: token_create
 
+      # Get the hash of the control plane CA certificate and save the output as an ansible variable
     - name: Get tokens for nodes to join, get ca-cert-hash (2/2)
-      ansible.builtin.shell:
-        cmd: >
-          openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt |
-          openssl rsa -pubin -outform der 2>/dev/null |
-          openssl dgst -sha256 -hex | sed 's/^.* //'
+      ansible.builtin.shell: >
+        openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt |
+        openssl rsa -pubin -outform der 2>/dev/null |
+        openssl dgst -sha256 -hex | sed 's/^.* //'
       register: ca_cert_hash
       changed_when: False
 
+  # The `when` clause makes this step only run on hosts which are in the list of nodes_not_joined
 - name: Join all missing nodes
+  when: ansible_hostname in hostvars[groups['control_plane'][0]]['nodes_not_joined']
   ansible.builtin.shell:
     cmd: |
       kubeadm join --token \
@@ -61,9 +57,9 @@
       {{ hostvars[groups['control_plane'][0]]['trusted_network_address'] }}:\
       {{ apiserver_port }} \
       --discovery-token-ca-cert-hash sha256:\
-      {{ hostvars[groups['control_plane'][0]]['ca_cert_hash']['stdout'] }} |\
+      {{ hostvars[groups['control_plane'][0]]['ca_cert_hash']['stdout'] }} \
+      2> /var/log/kubeadm_join_error.txt |\
       tee /var/log/kubeadm_join_output.txt
-  when: ansible_hostname in hostvars[groups['control_plane'][0]]['nodes_not_joined']
 
 - name: If no worker nodes, annotate the control plane node to allow it to schedule pods
   when: groups['worker_nodes'] | count == 0

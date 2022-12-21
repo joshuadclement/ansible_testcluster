@@ -8,6 +8,7 @@
     acmedns_public_IP: "{{ acmedns_node | extract(hostvars) | json_query('public_network_address') }}"
     acmedns_trusted_IP: "{{ acmedns_node | extract(hostvars) | community.general.json_query('trusted_network_address') }}"
 
+  # Create a variable with a string that should be added to /etc/hosts on each node
 - name: Prepare acme-dns, get entry for /etc/hosts
   set_fact:
     acmedns_etchosts_entry: "{{ acmedns_trusted_IP }}    {{ acmedns_hostname }}"
@@ -31,6 +32,7 @@
       failed_when: false
       register: acmedns_check_deployment_exists
 
+      # If it isn't already deployed, then copy the manifest over
     - name: Install acme-dns, copy manifest (2/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       ansible.builtin.template:
@@ -40,6 +42,8 @@
         owner: root
         group: root
 
+      # If it isn't already deployed, then apply the manifest
+      # kubectl apply -f
     - name: Install acme-dns, apply manifest (3/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       kubernetes.core.k8s:
@@ -52,14 +56,21 @@
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       ansible.builtin.shell: sleep 60
 
+      # The teardown playbook saves both secrets containing TLS certificates (to avoid letsencrypt ratelimits)
+      # and the registration for the acme-dns server (necessary to keep the same subdomain strings as before).
+      # This step checks whether the backup acme-dns registration files are in the expected place, and if so,
+      # copies them to the kubernetes system folder
     - name: Install acme-dns, copy registration json from backup if it exists (5/8)
       ansible.builtin.shell: |
         [[ -f /root/kubernetesbackup/acme_dns_sdpods.json ]] && \
         cp /root/kubernetesbackup/acme_dns_sdpods.json /etc/kubernetes/custom_manifests/acme_dns_sdpods.json
         [[ -f /root/kubernetesbackup/acme_dns_sdtestpods.json ]] && \
         cp /root/kubernetesbackup/acme_dns_sdtestpods.json /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json
+      failed_when: False
+      args:
+        executable: /bin/bash
 
-      # Then perform registration with a curl request on the control plane node.
+      # This checks whether registration files exist in the kubernetes system folder, and if not, performs registration.
       # TODO modify this part if there are ever multiple nodes in the control plane.
     - name: Install acme-dns, register if not done for both pods and testpods subdomains (6/8)
       ansible.builtin.shell: |
@@ -73,6 +84,7 @@
         -H "Content-Type: application/json" \
         --data '{"allowfrom": ["130.226.137.135/32", "127.0.0.0/8", "{{ trusted_network_cidr }}", "{{ vlan_subnet_cidr }}", "{{ pod_network_cidr }}"]}' | \
         tee /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json
+      failed_when: False
       args:
         executable: /bin/bash
 
@@ -115,7 +127,7 @@
     - "'control_plane' in group_names"
   block:
     # Then with the dns server and records ready to respond to DNS01 challenges, create the ingress dependencies for
-    # the user pods backend
+    # the user pods backend (an issuer that uses acme-dns to get a wildcard certificate for production and testing)
     - name: Install acme-dns, create issuer manifest (1/2)
       ansible.builtin.template:
         src: "{{ role_path }}/templates/acme_dns_user_pods_issuer.yaml.j2"
@@ -124,6 +136,7 @@
         owner: root
         group: root
 
+      # kubectl apply -f
     - name: Install acme-dns, apply the manifest (2/2)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"

@@ -18,8 +18,10 @@
         sed -i '/resourceVersion/d' /root/kubernetesbackup/backupcerts.yaml
         sed -i '/uid/d' /root/kubernetesbackup/backupcerts.yaml
         sed -i '/creationTimestamp/d' /root/kubernetesbackup/backupcerts.yaml
+      failed_when: False
 
     - name: Backup acme_dns registration json
       ansible.builtin.shell: |
         cp /etc/kubernetes/custom_manifests/acme_dns_sdpods.json /root/kubernetesbackup/acme_dns_sdpods.json
         cp /etc/kubernetes/custom_manifests/acme_dns_sdtestpods.json /root/kubernetesbackup/acme_dns_sdtestpods.json
+      failed_when: False

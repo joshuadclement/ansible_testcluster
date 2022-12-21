@@ -1,6 +1,8 @@
 - name: Ensure nodes have public IP labels
   when: "'control_plane' in group_names"
   block:
+      # Create an ansible variable that is a list of hostnames (not as reached by ssh but as they appear in the cluster)
+      # which have a public IP address
     - name: Get list of nodes that have a public IP
       ansible.builtin.set_fact:
         nodes_with_public_IP: "{{ hostvars | dict2items |
@@ -8,6 +10,8 @@
         selectattr('public_network_address', 'defined') |
         map(attribute='ansible_hostname') }}"
 
+      # On the control plane node, run this command which will add a label to the kubernetes Node object for each host
+      # that has a public IP address
     - name: Apply labels to those nodes
       loop: "{{ nodes_with_public_IP }}"
       ansible.builtin.shell: |
@@ -25,6 +29,7 @@
     - "'control_plane' in group_names"
     - ingress_deployments.stdout_lines | count < 1
   block:
+      # helm repo add
     - name: Install ingress, add helm repo (1/3)
       kubernetes.core.helm_repository:
         name: k8s-ingress-nginx
@@ -38,6 +43,9 @@
         group: root
         mode: 0640
 
+      # helm install -f /etc/kubernetes... ingress-nginx k8s-ingress-nginx/ingress-nginx
+      # --namespace ingress-nginx --create-namespace
+      # and then wait
     - name: Install ingress, install chart (3/3)
       kubernetes.core.helm:
         update_repo_cache: True
@@ -61,6 +69,7 @@
     - "'control_plane' in group_names"
     - cert_manager_deployments.stdout_lines | count < 1
   block:
+      # helm repo add
     - name: Install cert_manager, add helm repo (1/3)
       kubernetes.core.helm_repository:
         name: jetstack
@@ -74,6 +83,7 @@
         group: root
         mode: 0640
 
+      # helm install, like above for ingress-nginx
     - name: Install cert_manager, install chart (3/3)
       kubernetes.core.helm:
         update_repo_cache: True
@@ -102,6 +112,8 @@
         src: "{{ role_path }}/templates/cluster-issuer.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/cluster-issuer.yaml
 
+      # kubectl apply -f /etc/kubernetes...
+      # and then wait
     - name: Install cert_manager, apply issuer manifest (2/2)
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"
@@ -109,7 +121,9 @@
         src: /etc/kubernetes/custom_manifests/cluster-issuer.yaml
         wait: True
 
-
+  # The teardown playbook saves both secrets containing TLS certificates (to avoid letsencrypt ratelimits)
+  # and the registration for the acme-dns server (necessary to keep the same subdomain strings as before).
+  # This checks if the expected secrets file is there, and if so applies it in the following steps
 - name: Check if certificate secrets were saved from a previous cluster
   when: "'control_plane' in group_names"
   ansible.builtin.shell: ls /root/kubernetesbackup/backupcerts.yaml
@@ -122,10 +136,11 @@
     - certificate_secrets_saved.stdout_lines | count > 0
   block:
     - name: Get the namespaces where there are secrets
-      ansible.builtin.shell: >-
-        cat /home/user/backupcerts.yaml | yq e '.metadata.namespace' | grep -v -- ---
+      ansible.builtin.shell: >
+        cat /root/kubernetesbackup/backupcerts.yaml | yq e '.metadata.namespace' | grep -v -- ---
       register: secrets_namespaces
 
+      # kubectl create namespace ...
     - name: Create the namespaces for the secrets
       loop: "{{ secrets_namespaces.stdout_lines }}"
       kubernetes.core.k8s:
@@ -136,6 +151,7 @@
         api_version: v1
 
 
+      # kubectl apply -f
     - name: Apply the manifest if saved
       kubernetes.core.k8s:
         kubeconfig: "{{ k8s_admin_config }}"

@@ -5,11 +5,13 @@
   changed_when: False
   register: calico_result
   
+  # If there are no lines of stdout from the command above, then calico isn't installed and needs to be now.
 - name: Install Calico in control_plane
   when:
     - "'control_plane' in group_names"
     - calico_result.stdout_lines | count == 0
   block:
+      # helm repo add projectcalico https://...
     - name: Install calico, add helm repo (1/5)
       kubernetes.core.helm_repository:
         name: projectcalico
@@ -23,6 +25,9 @@
         group: root
         mode: 0640
 
+      # helm install -f /etc/kubernetes/helm_values/calico.yaml calico projectcalico/tigera-operator
+      # --namespace tigera-operator --create-namespace
+      # and then wait
     - name: Install calico, install chart (3/5)
       kubernetes.core.helm:
         update_repo_cache: True
@@ -36,6 +41,7 @@
           - /etc/kubernetes/helm_values/calico.yaml
         wait: True
 
+      # curl && sha256sum
     - name: Install Calico, fetch calicoctl (4/5)
       ansible.builtin.get_url:
         url: "{{ calicoctl_url }}"
