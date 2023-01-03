@@ -68,7 +68,7 @@
       - username: "root"
         homepath: "/root"
     ansible.builtin.copy:
-      src: "{{ role_path }}/files/zshrc"
+      src: "{{ playbook_dir }}/install/files/zshrc"
       dest: "{{ item.homepath }}/.zshrc"
       owner: "{{ item.username }}"
       group: "{{ item.username }}"
@@ -107,7 +107,7 @@
   block:
     - name: Configure netplan, copy template (1/2)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/01-netcfg.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/01-netcfg.yaml.j2"
         dest: "/etc/netplan/01-netcfg.yaml"
         owner: root
         group: root
@@ -124,7 +124,7 @@
   block:
     - name: Set firewall rules, copy persistent files (1/2)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/rules.v4.j2"
+        src: "{{ playbook_dir }}/install/templates/rules.v4.j2"
         dest: "/etc/iptables/rules.v4"
         owner: root
         group: root

@@ -29,7 +29,7 @@
 
     - name: Initialize control plane, copy kubeadm config (2/5)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/kubeadm-config.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/kubeadm-config.yaml.j2"
         dest: /etc/kubernetes/kubeadm-config.yaml
         owner: root
         group: root

@@ -36,7 +36,7 @@
     - name: Install acme-dns, copy manifest (2/8)
       when: acmedns_check_deployment_exists.stdout_lines | count == 0
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/deploy_acme_dns.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/deploy_acme_dns.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/acme_dns.yaml
         mode: 0600
         owner: root
@@ -130,7 +130,7 @@
     # the user pods backend (an issuer that uses acme-dns to get a wildcard certificate for production and testing)
     - name: Install acme-dns, create issuer manifest (1/2)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/acme_dns_user_pods_issuer.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/acme_dns_user_pods_issuer.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/acme_dns_user_pods_issuer.yaml
         mode: 0600
         owner: root

@@ -36,7 +36,7 @@
 
     - name: Configure IP pools, copy manifest (3/6)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/calico_ip_pools.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/calico_ip_pools.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/calico_ip_pools.yaml
         owner: root
         group: root
@@ -85,7 +85,7 @@
   block:
     - name: Apply network policies, copy manifest (1/5)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/network_policies.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/network_policies.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/network_policies.yaml
         owner: root
         group: root

@@ -6,7 +6,7 @@
     # scp modules-load-k8s.conf host:/etc/modules-load.d/k8s.conf
   - name: Prepare network prerequisites, set /etc/modules-load.d/k8s.conf (2/4)
     ansible.builtin.copy:
-      src: "{{ role_path }}/files/modules-load-k8s.conf"
+      src: "{{ playbook_dir }}/install/files/modules-load-k8s.conf"
       dest: /etc/modules-load.d/k8s.conf
       owner: root
       group: root
@@ -15,7 +15,7 @@
     # scp ...
   - name: Prepare network prerequisites, set /etc/sysctl.d/k8s.conf (3/4)
     ansible.builtin.copy:
-      src: "{{ role_path }}/files/sysctl-k8s.conf"
+      src: "{{ playbook_dir }}/install/files/sysctl-k8s.conf"
       dest: /etc/sysctl.d/k8s.conf
       owner: root
       group: root
@@ -57,7 +57,7 @@
   block:
   - name: Install cri-o from repository, add sources (1/7)
     ansible.builtin.template:
-      src: "{{ role_path }}/templates/crio-sources.list.j2"
+      src: "{{ playbook_dir }}/install/templates/crio-sources.list.j2"
       dest: /etc/apt/sources.list.d/crio-sources.list
       owner: root
       group: root
@@ -95,7 +95,7 @@
     # scp crio.conf host:/etc/crio/crio.conf
   - name: Install cri-o from repository, copy crio config file (6/7)
     ansible.builtin.copy:
-      src: "{{ role_path }}/files/crio.conf"
+      src: "{{ playbook_dir }}/install/files/crio.conf"
       dest: /etc/crio/crio.conf
       owner: root
       group: root

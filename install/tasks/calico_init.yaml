@@ -19,7 +19,7 @@
 
     - name: Install calico, copy values (2/5)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/calico_helm_values.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/calico_helm_values.yaml.j2"
         dest: /etc/kubernetes/helm_values/calico.yaml
         owner: root
         group: root

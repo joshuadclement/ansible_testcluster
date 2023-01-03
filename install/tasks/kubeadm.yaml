@@ -29,7 +29,7 @@
       
     - name: Install kubernetes bootstrapping parts, add sources (2/7)
       ansible.builtin.copy:
-        src: "{{ role_path }}/files/kubernetes.list"
+        src: "{{ playbook_dir }}/install/files/kubernetes.list"
         dest: /etc/apt/sources.list.d/kubernetes.list
         owner: root
         group: root

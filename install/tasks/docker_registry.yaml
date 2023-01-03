@@ -56,7 +56,7 @@
     # namespace, so that kubernetes can pass through the ingress authentication to pull the container images.
     - name: Prepare secrets, create docker login config file
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/docker_login_config.json.j2"
+        src: "{{ playbook_dir }}/install/templates/docker_login_config.json.j2"
         dest: /etc/kubernetes/custom_manifests/docker_registry/docker_login_config.json
         mode: 0600
         owner: root
@@ -76,7 +76,7 @@
        
     - name: Create local docker registry, copy manifest (1/2)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/docker_registry.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/docker_registry.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/docker_registry.yaml
         owner: root
         group: root

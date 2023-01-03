@@ -37,7 +37,7 @@
 
     - name: Install ingress, copy values (2/3)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/ingress_helm_values.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/ingress_helm_values.yaml.j2"
         dest: /etc/kubernetes/helm_values/ingress.yaml
         owner: root
         group: root
@@ -77,7 +77,7 @@
 
     - name: Install cert_manager, copy values (2/3)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/cert_manager_helm_values.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/cert_manager_helm_values.yaml.j2"
         dest: /etc/kubernetes/helm_values/cert_manager.yaml
         owner: root
         group: root
@@ -109,7 +109,7 @@
   block:
     - name: Install cert_manager, copy issuer manifest (1/2)
       ansible.builtin.template:
-        src: "{{ role_path }}/templates/cluster-issuer.yaml.j2"
+        src: "{{ playbook_dir }}/install/templates/cluster-issuer.yaml.j2"
         dest: /etc/kubernetes/custom_manifests/cluster-issuer.yaml
 
       # kubectl apply -f /etc/kubernetes...
