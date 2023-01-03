@@ -1,5 +1,73 @@
-- name: Install kubeadm
+- name: Build local cache of .deb packages if not already present
+  hosts: 127.0.0.1
+  connection: local
+  tasks:
+    - name: Check cri-o components are present
+      ansible.builtin.shell: |
+        [[ -f {{ playbook_dir }}/cache/cri-o_{{ crio_version }}-{{ crio_version_subpatch }} ]] && \
+        [[ -f {{ playbook_dir }}/cache/cri-o-runc_{{ crio_version }}-{{ crio_version_subpatch }} ]] && \
+        [[ -f {{ playbook_dir }}/cache/containernetworking-plugins_{{ crio_version }}-{{ crio_version_subpatch }} ]] || \
+        echo "yes"
+      register: crio-components-present
+    - name: Get cri-o components
+      when:
+        - crio-components-present.stdout != "yes"
+      block:
+        - name: Get first release
+          ansible.builtin.shell: |
+            wget https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release.key -O /tmp/crio.key
+            gpg --import /tmp/crio.key
+            wget https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release -O /tmp/crio-Release
+            wget https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release.gpg -O /tmp/crio-Release.gpg
+            gpg --verify /tmp/crio-Release.gpg /tmp/crio-Release || echo "Couldn't verify release file" && exit 1
+
+- name: Install kubernetes cluster
   hosts: cluster
-  roles:
-    - installkubeadm
   become: True
+  vars_files:
+    - "{{ playbook_dir }}/install/vars.yaml"
+  tasks:
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/check_hosts.yaml"
+
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/prepare.yaml"
+    # use sysprepare tag for the whole task file, or see the tasks file for more specific tags
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/crio.yaml"
+      tags:
+        - crio
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/kubeadm.yaml"
+      tags:
+        - kubeadm
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/control_plane_init.yaml"
+      tags:
+        - control_plane
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/calico_init.yaml"
+      tags:
+        - calico
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/worker_node_init.yaml"
+      tags:
+        - worker_nodes
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/network.yaml"
+    # use network tag for the whole task file, or see the tasks file for more specific tags
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/ingress.yaml"
+      tags:
+        - ingress
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/docker_registry.yaml"
+      tags:
+        - docker_registry
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/acme_dns.yaml"
+      tags:
+        - acme_dns
+    
+    - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/user_pods_backend.yaml"
+      tags:
+        - user_pods
+
