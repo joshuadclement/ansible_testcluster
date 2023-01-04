@@ -18,49 +18,38 @@
 
 - name: Install kubernetes bootstrapping parts
   when:
-    - kubelet_version.stdout != kubernetes_version
-    - kubeadm_version.stdout != kubernetes_version
-    - kubectl_version.stdout != kubernetes_version
+    - not (kubelet_version.stdout == kubernetes_version and kubeadm_version.stdout == kubernetes_version and kubectl_version.stdout == kubernetes_version )
   block:
-    - name: Install kubernetes bootstrapping parts, get signing key (1/7)
-      ansible.builtin.get_url:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
-      
-    - name: Install kubernetes bootstrapping parts, add sources (2/7)
+    - name: Install kubernetes bootstrapping parts, copy cached packages (1/6)
+      loop: ['kubelet', 'kubectl', 'kubeadm']
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/install/files/kubernetes.list"
-        dest: /etc/apt/sources.list.d/kubernetes.list
+        src: "{{ playbook_dir }}/cache/{{ item }}_{{ kubernetes_version }}.deb"
+        dest: /tmp/{{ item }}_{{ kubernetes_version }}.deb
         owner: root
         group: root
         mode: 0644
 
-      # apt install kubelet=x.y.z-00 kubeadm=x.y.z-00...
-    - name: Install kubernetes bootstrapping parts, install packages (3/7)
+    - name: Install kubernetes bootstrapping parts, install packages (2/6)
+      loop: ['kubelet', 'kubectl', 'kubeadm']
       ansible.builtin.apt:
-        update_cache: True
-        name:
-          - kubelet={{ kubernetes_version }}-00
-          - kubeadm={{ kubernetes_version }}-00
-          - kubectl={{ kubernetes_version }}-00
-        state: present
+        deb: /tmp/{{ item }}_{{ kubernetes_version }}.deb
 
       # apt-mark hold kubelet kubeadm kubectl
-    - name: Install kubernetes bootstrapping parts, hold package version constant (4/7)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (3/6)
       ansible.builtin.dpkg_selections:
         name: kubelet
         selection: hold
 
-    - name: Install kubernetes bootstrapping parts, hold package version constant (5/7)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (4/6)
       ansible.builtin.dpkg_selections:
         name: kubeadm
         selection: hold
 
-    - name: Install kubernetes bootstrapping parts, hold package version constant (6/7)
+    - name: Install kubernetes bootstrapping parts, hold package version constant (5/6)
       ansible.builtin.dpkg_selections:
         name: kubectl
         selection: hold
 
-    - name: Install kubernetes bootstrapping parts, ensure kubelet is configured to use the internal network address (7/7)
+    - name: Install kubernetes bootstrapping parts, ensure kubelet is configured to use the internal network address (6/6)
       ansible.builtin.shell: |
         sed -i 's/\(Environment="KUBELET_CONFIG_ARGS=[^ ]*\)\( --node-ip.*\)\?"$/\1 --node-ip={{ trusted_network_address }}"/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf

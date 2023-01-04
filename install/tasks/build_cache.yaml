@@ -1,0 +1,160 @@
+- name: Check whether cri-o packages exist in cache on localhost
+  when: "'control_plane' in group_names"
+  delegate_to: localhost
+  become: False
+  register: localhost_has_crio_cache
+  ansible.builtin.shell: |
+    { [[ -f {{ playbook_dir }}/cache/cri-o_{{ crio_version }}-{{ crio_version_subpatch }}.deb ]] && \
+    [[ -f {{ playbook_dir }}/cache/cri-o-runc_{{ crio_version }}-{{ crio_version_subpatch }}.deb ]] && \
+    [[ -f {{ playbook_dir }}/cache/containernetworking-plugins-crioversion_{{ crio_version }}-{{ crio_version_subpatch }}.deb ]] && \
+    echo "yes"; } || echo "no"
+  args:
+    executable: /bin/bash
+
+- name: Fetch cri-o deb files from repository
+  when:
+    - "'control_plane' in group_names"
+    - "localhost_has_crio_cache.stdout == 'no'"
+  block:
+    - name: Fetch cri-o deb files from repository, add sources (1/6)
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/install/templates/crio-sources.list.j2"
+        dest: /etc/apt/sources.list.d/crio-sources.list
+        owner: root
+        group: root
+        mode: 0644
+  
+      # curl -L https://download.. -o /tmp/libcontainers-key
+    - name: Fetch cri-o deb files from repository, get keys (2/6)
+      ansible.builtin.uri:
+        url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os_tag }}/Release.key
+        follow_redirects: safe
+        dest: /tmp/libcontainers-key
+  
+      # curl -L https://download.. -o /tmp/crio-key
+    - name: Fetch cri-o deb files from repository, get keys (3/6)
+      ansible.builtin.uri:
+        url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release.key
+        follow_redirects: safe
+        dest: /tmp/crio-key
+  
+    - name: Fetch cri-o deb files from repository, install keys (4/6)
+      ansible.builtin.shell: |
+        cat /tmp/libcontainers-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-archive-keyring.gpg --yes
+        cat /tmp/crio-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg --yes
+        rm /tmp/libcontainers-key /tmp/crio-key
+
+    - name: Fetch cri-o deb files from repository, save deb files to remote host (5/6)
+      become: False
+      ansible.builtin.shell: |
+        cd ~/
+        [[ -d cache ]] || mkdir cache
+        cd cache
+        rm cri-o* containernetworking-plugins* || echo "none already in remote cache to clean"
+        apt download cri-o={{ crio_version }}~{{ crio_version_subpatch }}
+        mv cri-o* cri-o_{{ crio_version }}-{{ crio_version_subpatch }}.deb
+        apt download cri-o-runc
+        mv cri-o-runc* cri-o-runc_{{ crio_version }}-{{ crio_version_subpatch }}.deb
+        apt download containernetworking-plugins
+        mv containernetworking-plugins* containernetworking-plugins-crioversion_{{ crio_version }}-{{ crio_version_subpatch }}.deb
+      args:
+        executable: /bin/bash
+
+    - name: Fetch cri-o deb files from repository, copy deb files to localhost (6/6)
+      when: "'control_plane' in group_names"
+      delegate_to: localhost
+      become: False
+      ansible.builtin.shell: |
+        scp {{ groups['control_plane'][0] }}:cache/cri-o_{{ crio_version }}-{{ crio_version_subpatch }}.deb {{ playbook_dir }}/cache
+        scp {{ groups['control_plane'][0] }}:cache/cri-o-runc_{{ crio_version }}-{{ crio_version_subpatch }}.deb {{ playbook_dir }}/cache
+        scp {{ groups['control_plane'][0] }}:cache/containernetworking-plugins-crioversion_{{ crio_version }}-{{ crio_version_subpatch }}.deb {{ playbook_dir }}/cache
+
+- name: Check whether crictl exists in cache on localhost
+  when: "'control_plane' in group_names"
+  delegate_to: localhost
+  become: False
+  register: localhost_has_crictl_cache
+  ansible.builtin.shell: |
+    [[ -f {{ playbook_dir }}/cache/crictl_{{ crictl_version }} ]] && \
+    echo "yes" || echo "no"
+  args:
+    executable: /bin/bash
+
+- name: Download crictl to cache on localhost
+  when:
+    - "'control_plane' in group_names"
+    - "localhost_has_crictl_cache.stdout == 'no'"
+  delegate_to: localhost
+  become: False
+  block:
+    - name: Download crictl to cache on localhost (1/2)
+      ansible.builtin.get_url:
+        url: "{{ crictl_url }}"
+        checksum: "{{ crictl_checksum }}"
+        dest: /tmp/crictl.tar.gz
+
+    - name: Download crictl to cache on localhost (2/2)
+      ansible.builtin.shell: |
+        tar -xzf /tmp/crictl.tar.gz -C /tmp
+        mv /tmp/crictl {{ playbook_dir }}/cache/crictl_{{ crictl_version }}
+        rm /tmp/crictl.tar.gz
+        chmod +x {{ playbook_dir }}/cache/crictl_{{ crictl_version }}
+      
+- name: Check whether kubernetes packages exist in cache on localhost
+  when: "'control_plane' in group_names"
+  delegate_to: localhost
+  become: False
+  register: localhost_has_kubernetes_cache
+  ansible.builtin.shell: |
+    { [[ -f {{ playbook_dir }}/cache/kubelet_{{ kubernetes_version }}.deb ]] && \
+    [[ -f {{ playbook_dir }}/cache/kubeadm_{{ kubernetes_version }}.deb ]] && \
+    [[ -f {{ playbook_dir }}/cache/kubectl_{{ kubernetes_version }}.deb ]] && \
+    echo "yes"; } || echo "no"
+  args:
+    executable: /bin/bash
+
+- name: Fetch kubernetes deb files from repository
+  when:
+    - "'control_plane' in group_names"
+    - "localhost_has_kubernetes_cache.stdout == 'no'"
+  block:
+    - name: Fetch kubernetes deb files from repository (1/4)
+      ansible.builtin.get_url:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+      
+    - name: Fetch kubernetes deb files from repository, add sources (2/4)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/install/files/kubernetes.list"
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        owner: root
+        group: root
+        mode: 0644
+
+      # apt install kubelet=x.y.z-00 kubeadm=x.y.z-00...
+    - name: Fetch kubernetes deb files from repository, save deb files to remote host (3/4)
+      become: False
+      ansible.builtin.shell: |
+        cd ~/
+        [[ -d cache ]] || mkdir cache
+        cd cache
+        rm kubelet* kubeadm* kubectl* || echo "none already in remote cache to clean"
+        apt download kubelet={{ kubernetes_version }}-00
+        mv kubelet* kubelet_{{ kubernetes_version }}.deb
+        apt download kubeadm={{ kubernetes_version }}-00
+        mv kubeadm* kubeadm_{{ kubernetes_version }}.deb
+        apt download kubectl={{ kubernetes_version }}-00
+        mv kubectl* kubectl_{{ kubernetes_version }}.deb
+      args:
+        executable: /bin/bash
+    - name: Fetch kubernetes deb files from repository, copy deb files to localhost (4/4)
+      when: "'control_plane' in group_names"
+      delegate_to: localhost
+      become: False
+      ansible.builtin.shell: |
+        scp {{ groups['control_plane'][0] }}:cache/kubeadm_{{ kubernetes_version }}.deb {{ playbook_dir }}/cache
+        scp {{ groups['control_plane'][0] }}:cache/kubelet_{{ kubernetes_version }}.deb {{ playbook_dir }}/cache
+        scp {{ groups['control_plane'][0] }}:cache/kubectl_{{ kubernetes_version }}.deb {{ playbook_dir }}/cache
+
+
+

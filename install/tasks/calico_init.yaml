@@ -51,7 +51,7 @@
         owner: root
         group: root
 
-    - name: Install Calico, sleep before continuing (5/5)
+    - name: Install Calico, sleep before continuing to install worker nodes to ensure all Calico components are running (5/5)
       # There are calico-apiserver and calico-system components that are indirectly created by the tigera-operator pod,
       # so the helm command doesn't wait for them to reach ready state.
       ansible.builtin.shell: sleep 45

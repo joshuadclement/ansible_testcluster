@@ -33,17 +33,12 @@
 
 - name: Install crictl
   when: crictl_installed_version.stdout != crictl_version
-  block:
-  - name: Install crictl, fetch (1/2)
-    ansible.builtin.get_url:
-      url: "{{ crictl_url }}"
-      checksum: "{{ crictl_checksum }}"
-      dest: /tmp/crictl.tar.gz
-
-  - name: Install crictl, extract and clean (2/2)
-    ansible.builtin.shell: |
-      tar -xzf /tmp/crictl.tar.gz -C /usr/local/bin
-      rm /tmp/crictl.tar.gz
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/cache/crictl_{{ crictl_version }}"
+    dest: /usr/bin/crictl
+    owner: root
+    group: root
+    mode: 0751
 
 - name: Check cri-o {{ crio_version }} is installed and running
   ansible.builtin.shell: |
@@ -52,59 +47,36 @@
   failed_when: False
   changed_when: False
 
-- name: Install cri-o from repository
+- name: Install cri-o from cache
   when: crio_installed_version.stdout != crio_version
   block:
-  - name: Install cri-o from repository, add sources (1/7)
-    ansible.builtin.template:
-      src: "{{ playbook_dir }}/install/templates/crio-sources.list.j2"
-      dest: /etc/apt/sources.list.d/crio-sources.list
-      owner: root
-      group: root
-      mode: 0644
+    - name: Install cri-o from cache, copy cached packages (1/4)
+      loop: ['containernetworking-plugins-crioversion', 'cri-o-runc', 'cri-o']
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/cache/{{ item }}_{{ crio_version }}-{{ crio_version_subpatch }}.deb"
+        dest: /tmp/{{ item }}_{{ crio_version }}-{{ crio_version_subpatch }}.deb
+        owner: root
+        group: root
+        mode: 0644
 
-    # curl -L https://download.. -o /tmp/libcontainers-key
-  - name: Install cri-o from repository, get keys (2/7)
-    ansible.builtin.uri:
-      url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os_tag }}/Release.key
-      follow_redirects: safe
-      dest: /tmp/libcontainers-key
+    - name: Install kubernetes bootstrapping parts, install packages (2/4)
+      loop: ['containernetworking-plugins-crioversion', 'cri-o-runc', 'cri-o']
+      ansible.builtin.apt:
+        deb: /tmp/{{ item }}_{{ crio_version }}-{{ crio_version_subpatch }}.deb
 
-    # curl -L https://download.. -o /tmp/crio-key
-  - name: Install cri-o from repository, get keys (3/7)
-    ansible.builtin.uri:
-      url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release.key
-      follow_redirects: safe
-      dest: /tmp/crio-key
+      # scp crio.conf host:/etc/crio/crio.conf
+    - name: Install cri-o from repository, copy cri-o config file (3/4)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/install/files/crio.conf"
+        dest: /etc/crio/crio.conf
+        owner: root
+        group: root
+        mode: 0644
 
-  - name: Install cri-o from repository, install keys (4/7)
-    ansible.builtin.shell: |
-      cat /tmp/libcontainers-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-archive-keyring.gpg --yes
-      cat /tmp/crio-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg --yes
-      rm /tmp/libcontainers-key /tmp/crio-key
-
-    # apt install cri-o=x.y.z~a
-  - name: Install cri-o from repository, apt install (5/7)
-    ansible.builtin.apt:
-      update_cache: True
-      name:
-        - cri-o={{ crio_version }}~{{ crio_version_subpatch }}
-        - cri-o-runc
-        - containernetworking-plugins
-
-    # scp crio.conf host:/etc/crio/crio.conf
-  - name: Install cri-o from repository, copy crio config file (6/7)
-    ansible.builtin.copy:
-      src: "{{ playbook_dir }}/install/files/crio.conf"
-      dest: /etc/crio/crio.conf
-      owner: root
-      group: root
-      mode: 0644
-
-    # systemctl enable crio && systemctl restart crio
-  - name: Install cri-o from repository, start and enable cri-o (7/7)
-    ansible.builtin.systemd:
-      name: crio
-      state: restarted
-      enabled: True
-      daemon_reload: True
+      # systemctl enable crio && systemctl restart crio
+    - name: Install cri-o from repository, start and enable cri-o (4/4)
+      ansible.builtin.systemd:
+        name: crio
+        state: restarted
+        enabled: True
+        daemon_reload: True

@@ -14,7 +14,6 @@
   # Create an ansible variable that is a list of all the hostnames of the hosts in the 'worker_nodes' group.
   # Not the hostname reached by ssh, but the hostname the host itself knows and uses inside the cluster.
 - name: Get list of nodes that should be joined
-  when: "'control_plane' in group_names"
   ansible.builtin.set_fact:
     nodes_that_should_be_joined: "{{ hostvars | dict2items |
     selectattr('key', 'in', groups['worker_nodes']) |
@@ -58,8 +57,8 @@
       {{ apiserver_port }} \
       --discovery-token-ca-cert-hash sha256:\
       {{ hostvars[groups['control_plane'][0]]['ca_cert_hash']['stdout'] }} \
-      2> /var/log/kubeadm_join_error.txt |\
-      tee /var/log/kubeadm_join_output.txt
+      2> /var/log/kubeadm_join_error.txt \
+      > /var/log/kubeadm_join_output.txt
 
 - name: If no worker nodes, annotate the control plane node to allow it to schedule pods
   when: groups['worker_nodes'] | count == 0
@@ -78,3 +77,28 @@
   ansible.builtin.shell: |
     kubectl taint nodes {{ ansible_hostname }} node-role.kubernetes.io/control-plane:NoSchedule-
     kubectl taint nodes {{ ansible_hostname }} --overwrite node-role.kubernetes.io/control-plane:PreferNoSchedule
+
+
+
+  # Finally check that there are no nodes left unjoined
+- name: Get list of joined worker nodes after worker_init (1/2)
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  ansible.builtin.shell: kubectl get nodes | tail -n +2 | awk '{print $1;}'
+  changed_when: False
+  register: print_nodes
+
+- name: Get list of joined worker nodes after worker_init (2/2)
+  ansible.builtin.set_fact:
+    nodes_that_are_joined: "{{ print_nodes.stdout_lines }}"
+
+
+- name: Get list of nodes that should be joined but are not after worker_init should be completed
+  ansible.builtin.set_fact:
+    nodes_not_joined: "{{ nodes_that_should_be_joined |
+    reject('in', nodes_that_are_joined) }}"
+
+- name: Fail if nodes are left unjoined
+  debug:
+    msg: "Nodes left unjoined (should be empty): {{ nodes_not_joined }}"
+  failed_when: nodes_not_joined | count > 0
+
