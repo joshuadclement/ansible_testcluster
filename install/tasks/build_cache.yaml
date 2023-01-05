@@ -16,7 +16,7 @@
     - "'control_plane' in group_names"
     - "localhost_has_crio_cache.stdout == 'no'"
   block:
-    - name: Fetch cri-o deb files from repository, add sources (1/6)
+    - name: Fetch cri-o deb files from repository, add sources (1/7)
       ansible.builtin.template:
         src: "{{ playbook_dir }}/install/templates/crio-sources.list.j2"
         dest: /etc/apt/sources.list.d/crio-sources.list
@@ -25,26 +25,30 @@
         mode: 0644
   
       # curl -L https://download.. -o /tmp/libcontainers-key
-    - name: Fetch cri-o deb files from repository, get keys (2/6)
+    - name: Fetch cri-o deb files from repository, get keys (2/7)
       ansible.builtin.uri:
         url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os_tag }}/Release.key
         follow_redirects: safe
         dest: /tmp/libcontainers-key
   
       # curl -L https://download.. -o /tmp/crio-key
-    - name: Fetch cri-o deb files from repository, get keys (3/6)
+    - name: Fetch cri-o deb files from repository, get keys (3/7)
       ansible.builtin.uri:
         url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ kubernetes_major_version}}.{{ kubernetes_minor_version }}/{{ crio_os_tag }}/Release.key
         follow_redirects: safe
         dest: /tmp/crio-key
   
-    - name: Fetch cri-o deb files from repository, install keys (4/6)
+    - name: Fetch cri-o deb files from repository, install keys (4/7)
       ansible.builtin.shell: |
         cat /tmp/libcontainers-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-archive-keyring.gpg --yes
         cat /tmp/crio-key | gpg --dearmor -o /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg --yes
         rm /tmp/libcontainers-key /tmp/crio-key
 
-    - name: Fetch cri-o deb files from repository, save deb files to remote host (5/6)
+    - name: Fetch cri-o deb files from repository, apt update after adding sources (5/7)
+      ansible.builtin.apt:
+        update_cache: True
+
+    - name: Fetch cri-o deb files from repository, save deb files to remote host (6/7)
       become: False
       ansible.builtin.shell: |
         cd ~/
@@ -60,7 +64,7 @@
       args:
         executable: /bin/bash
 
-    - name: Fetch cri-o deb files from repository, copy deb files to localhost (6/6)
+    - name: Fetch cri-o deb files from repository, copy deb files to localhost (7/7)
       when: "'control_plane' in group_names"
       delegate_to: localhost
       become: False
@@ -118,12 +122,12 @@
     - "'control_plane' in group_names"
     - "localhost_has_kubernetes_cache.stdout == 'no'"
   block:
-    - name: Fetch kubernetes deb files from repository (1/4)
+    - name: Fetch kubernetes deb files from repository (1/5)
       ansible.builtin.get_url:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
       
-    - name: Fetch kubernetes deb files from repository, add sources (2/4)
+    - name: Fetch kubernetes deb files from repository, add sources (2/5)
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/install/files/kubernetes.list"
         dest: /etc/apt/sources.list.d/kubernetes.list
@@ -131,8 +135,11 @@
         group: root
         mode: 0644
 
-      # apt install kubelet=x.y.z-00 kubeadm=x.y.z-00...
-    - name: Fetch kubernetes deb files from repository, save deb files to remote host (3/4)
+    - name: Fetch kubernetes deb files from repository, apt update after adding sources (3/5)
+      ansible.builtin.apt:
+        update_cache: True
+
+    - name: Fetch kubernetes deb files from repository, save deb files to remote host (4/5)
       become: False
       ansible.builtin.shell: |
         cd ~/
@@ -147,8 +154,8 @@
         mv kubectl* kubectl_{{ kubernetes_version }}.deb
       args:
         executable: /bin/bash
-    - name: Fetch kubernetes deb files from repository, copy deb files to localhost (4/4)
-      when: "'control_plane' in group_names"
+
+    - name: Fetch kubernetes deb files from repository, copy deb files to localhost (5/5)
       delegate_to: localhost
       become: False
       ansible.builtin.shell: |

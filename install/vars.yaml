@@ -1,5 +1,5 @@
 # Kubernetes
-pod_network_cidr: "10.128.0.0/15"
+pod_network_cidr: "10.192.0.0/10"
 trusted_network_gateway: "10.0.0.1"
 trusted_network_nameserver: "10.0.0.1"
 trusted_network_mask: "24"
