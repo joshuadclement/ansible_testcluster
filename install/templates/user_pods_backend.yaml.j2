@@ -1,0 +1,435 @@
+####################################################################
+# Components for the user pods backend in the sciencedata namespace
+# Assumes namespace and wildcard cert already exist
+####################################################################
+
+# ServiceAccount, and RBAC components to give the pod permissions
+# to create/delete user pods, services, ingresses, etc.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-pods-backend
+  namespace: sciencedata
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: modify-sciencedata
+  namespace: sciencedata
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - delete
+      - create
+      - watch
+  - apiGroups: [""]
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs:
+      - create
+      - delete
+      - list
+      - get
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: user-pods-modify-sciencedata
+  namespace: sciencedata
+subjects:
+  - kind: ServiceAccount
+    name: user-pods-backend
+roleRef:
+  kind: Role
+  name: modify-sciencedata
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: provision-nfs
+rules:
+  - apiGroups: [""]
+    resources:
+      - persistentvolumes
+    verbs:
+      - get
+      - list
+      - delete
+      - create
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: user-pods-provision-nfs
+subjects:
+  - kind: ServiceAccount
+    name: user-pods-backend
+    namespace: sciencedata
+roleRef:
+  kind: ClusterRole
+  name: provision-nfs
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: user-pods-backend
+  namespace: sciencedata
+  labels:
+    app: user-pods-backend
+spec:
+  serviceAccountName: user-pods-backend
+  imagePullSecrets:
+    - name: docker-registry-auth
+  containers:
+    - name: user-pods-backend
+      image: {{ docker_registry_domain }}/user_pods_backend
+      env:
+        - name: "BACKEND_LOCALREGISTRYURL"
+          value: "{{ docker_registry_domain }}"
+        - name: "BACKEND_LOCALREGISTRYSECRET"
+          value: "docker-registry-auth"
+        - name: "BACKEND_INGRESSDOMAIN"
+          value: "{{ backend_ingress_domain }}"
+        - name: "BACKEND_NAMESPACE"
+          value: "sciencedata"
+        - name: "BACKEND_PODSUBNETCIDR"
+          value: "{{ pod_network_cidr }}"
+      ports:
+        - containerPort: 80
+          protocol: TCP
+
+---
+# The ingress rule to serve the user_pods API on the trusted and vlan subnets
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/whitelist-source-range: 127.0.0.0/8,{{ trusted_network_cidr }},{{ vlan_subnet_cidr }}
+  name: user-pods-backend
+  namespace: sciencedata
+spec:
+  rules:
+    - host: kube.sciencedata.dk
+      http:
+        paths:
+          - backend:
+              service:
+                name: user-pods-backend-http
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-pods-backend-http
+  namespace: sciencedata
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: user-pods-backend
+
+---
+
+####################################################################
+# Components for the testing backend in the sciencedata-dev namespace
+# Assumes namespace and wildcard cert already exist
+# Mostly duplicate of the above, but with testing docker image
+# Includes go build dependencies and ssh access (for rsync)
+####################################################################
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-pods-backend
+  namespace: sciencedata-dev
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: modify-sciencedata
+  namespace: sciencedata-dev
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - delete
+      - create
+      - watch
+  - apiGroups: [""]
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs:
+      - create
+      - delete
+      - list
+      - get
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: user-pods-modify-sciencedata-testing
+  namespace: sciencedata-dev
+subjects:
+  - kind: ServiceAccount
+    name: user-pods-backend
+roleRef:
+  kind: Role
+  name: modify-sciencedata
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: provision-nfs-testing
+rules:
+  - apiGroups: [""]
+    resources:
+      - persistentvolumes
+    verbs:
+      - get
+      - list
+      - delete
+      - create
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: user-pods-provision-nfs-testing
+subjects:
+  - kind: ServiceAccount
+    name: user-pods-backend
+    namespace: sciencedata-dev
+roleRef:
+  kind: ClusterRole
+  name: provision-nfs-testing
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: user-pods-backend-testing
+  namespace: sciencedata-dev
+  labels:
+    app: user-pods-backend-testing
+spec:
+  serviceAccountName: user-pods-backend
+  imagePullSecrets:
+    - name: docker-registry-auth
+  containers:
+    - name: user-pods-backend-testing
+      image: {{ docker_registry_domain }}/user_pods_backend_testing
+      env:
+        - name: "SSH_PUBLIC_KEY"
+          value: "{{ backend_ssh_pubkey }}"
+        - name: "BACKEND_LOCALREGISTRYURL"
+          value: "{{ docker_registry_domain }}"
+        - name: "BACKEND_LOCALREGISTRYSECRET"
+          value: "docker-registry-auth"
+        - name: "BACKEND_INGRESSDOMAIN"
+          value: "{{ backend_ingress_domain_testing }}"
+        - name: "BACKEND_PODSUBNETCIDR"
+          value: "{{ pod_network_cidr }}"
+      ports:
+        - containerPort: 22
+          protocol: TCP
+        - containerPort: 80
+          protocol: TCP
+      securityContext:
+        capabilities:
+          add:
+            - "SYS_CHROOT"
+            - "AUDIT_WRITE"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-pods-backend-testing-ssh
+  namespace: sciencedata-dev
+spec:
+  type: NodePort
+  ports:
+    - port: 22
+      targetPort: 22
+      name: ssh
+      protocol: TCP
+      nodePort: 30002
+  selector:
+    app: user-pods-backend-testing
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/whitelist-source-range: 127.0.0.0/8,{{ trusted_network_cidr }},{{ vlan_subnet_cidr }}
+  name: user-pods-backend-testing
+  namespace: sciencedata-dev
+spec:
+  rules:
+    - host: testkube.sciencedata.dk
+      http:
+        paths:
+          - backend:
+              service:
+                name: user-pods-backend-testing-http
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-pods-backend-testing-http
+  namespace: sciencedata-dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: user-pods-backend-testing
+
+---
+
+####################################################################
+# Persistent Volumes for read only data that user pods need,
+# e.g. the mathematica and matlab installations for jupyter
+# Both in sciencedata and sciencedata-dev namespaces
+####################################################################
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jupyter-sciencedata-v1.0.0
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/user_pods_readonly/jupyter-sciencedata-v1.0.0
+  claimRef:
+    name: jupyter-sciencedata-v1.0.0
+    namespace: sciencedata
+# A local PV needs to have a specified nodeAffinity
+# The following selects nodes with os==linux, which is just all the nodes in the cluster
+# This assumes that all cluster nodes will have the appropriate directory.
+# If this is not the case, then labels must be added to the nodes which have the required directories
+# and this changed accordingly.
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyter-sciencedata-v1.0.0
+  namespace: sciencedata
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: jupyter-sciencedata-v1.0.0
+---
+# Duplicate of PV and PVC for testing. Note that the testing PV has a different name because they are not namespaced!
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jupyter-sciencedata-v1.0.0-testing
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/user_pods_readonly/jupyter-sciencedata-v1.0.0
+  claimRef:
+    name: jupyter-sciencedata-v1.0.0
+    namespace: sciencedata-dev
+# A local PV needs to have a specified nodeAffinity
+# The following selects nodes with os==linux, which is just all the nodes in the cluster
+# This assumes that all cluster nodes will have the appropriate directory.
+# If this is not the case, then labels must be added to the nodes which have the required directories
+# and this changed accordingly.
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyter-sciencedata-v1.0.0
+  namespace: sciencedata-dev
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: jupyter-sciencedata-v1.0.0-testing

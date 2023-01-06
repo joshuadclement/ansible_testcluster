@@ -58,7 +58,6 @@ vlan_subnet_mask: 24
 vlan_subnet_cidr: "10.2.0.0/{{ vlan_subnet_mask }}"
 
 # user_pods_backend
-backend_manifests_dir: "~/go/src/github.com/deic.dk/kubernetes_backend/manifests"
 backend_readonly_pv_nfs_ip: "10.0.0.20"
 backend_ingress_domain: "pods.clement.tel"
 backend_ingress_domain_testing: "testpods.clement.tel"
