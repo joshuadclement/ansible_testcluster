@@ -16,14 +16,14 @@
       loop: "{{ nodes_with_public_IP }}"
       ansible.builtin.shell: |
         kubectl label nodes {{ item }} hasPublicIP="true"
-    
+
 - name: Check ingress installed
   when: "'control_plane' in group_names"
   ansible.builtin.shell: kubectl get deployments -n ingress-nginx
   failed_when: False
   changed_when: False
   register: ingress_deployments
-  
+
 - name: Install ingress
   when:
     - "'control_plane' in group_names"

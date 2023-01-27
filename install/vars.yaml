@@ -62,7 +62,6 @@ backend_readonly_pv_nfs_ip: "10.0.0.20"
 backend_ingress_domain: "pods.clement.tel"
 backend_ingress_domain_testing: "testpods.clement.tel"
 backend_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFFaL0dy3Dq4DA5GCqFBKVWZntBSF0RIeVd9/qdhIj2n"
-cloudflare_api_token: ""
 
 # acme-dns
 # The domain zone that the NS is responsible for serving records for

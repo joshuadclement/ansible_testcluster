@@ -34,7 +34,7 @@
       name:
         - yq
       state: present
-  
+
     # apt update && apt dist-upgrade
   - name: Update
     ansible.builtin.apt:
@@ -73,7 +73,7 @@
       owner: "{{ item.username }}"
       group: "{{ item.username }}"
       mode: 0644
-  
+
     # usermod
   - name: Set user shell
     loop:

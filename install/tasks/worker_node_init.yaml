@@ -28,7 +28,7 @@
 
   # If there is at least one worker node that needs to join
 - name: Get tokens for nodes to join
-  when: 
+  when:
     - "'control_plane' in group_names"
     - nodes_not_joined | count > 0
   block:

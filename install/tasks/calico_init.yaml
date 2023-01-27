@@ -4,7 +4,7 @@
   failed_when: False
   changed_when: False
   register: calico_result
-  
+
   # If there are no lines of stdout from the command above, then calico isn't installed and needs to be now.
 - name: Install Calico in control_plane
   when:

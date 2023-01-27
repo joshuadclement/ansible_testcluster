@@ -9,45 +9,45 @@
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/build_cache.yaml"
       tags:
         - cache
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/prepare.yaml"
     # use sysprepare tag for the whole task file, or see the tasks file for more specific tags
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/crio.yaml"
       tags:
         - crio
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/kubeadm.yaml"
       tags:
         - kubeadm
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/control_plane_init.yaml"
       tags:
         - control_plane
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/calico_init.yaml"
       tags:
         - calico
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/worker_node_init.yaml"
       tags:
         - worker_nodes
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/network.yaml"
     # use network tag for the whole task file, or see the tasks file for more specific tags
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/ingress.yaml"
       tags:
         - ingress
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/docker_registry.yaml"
       tags:
         - docker_registry
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/acme_dns.yaml"
       tags:
         - acme_dns
-    
+
     - ansible.builtin.import_tasks: "{{ playbook_dir }}/install/tasks/user_pods_backend.yaml"
       tags:
         - user_pods

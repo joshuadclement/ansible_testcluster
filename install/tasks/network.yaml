@@ -12,6 +12,7 @@
     # 2) Create a separate IP pool for each node,
     # so that a short list of static routes can be applied to the silos to route traffic back to the pods.
     # see https://projectcalico.docs.tigera.io/networking/assign-ip-addresses-topology
+    # Every silo should have a route to `node_ip_pool` via `vlan_network_address` for each node.
 
     - name: Configure IP pools, wait until calico apiserver is ready (1/6)
       kubernetes.core.k8s:

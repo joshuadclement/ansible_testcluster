@@ -73,7 +73,7 @@
   when:
     - "'control_plane' in group_names"
   block:
-       
+
     - name: Create local docker registry, copy manifest (1/2)
       ansible.builtin.template:
         src: "{{ playbook_dir }}/install/templates/docker_registry.yaml.j2"
