@@ -6,7 +6,7 @@ trusted_network_mask: "24"
 trusted_network_cidr: "10.0.0.0/{{ trusted_network_mask }}"
 #  split network cidr into segment for silos and segment for cluster nodes
 trusted_silo_cidr: "10.0.0.0/25"
-trusted_cluster_cidr: "10.0.0.128/25"
+trusted_cluster_cidr: "10.0.0.192/26"
 kubernetes_major_version: "1"
 kubernetes_minor_version: "25"
 kubernetes_patch_version: "2"

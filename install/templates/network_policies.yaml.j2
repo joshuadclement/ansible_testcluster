@@ -1,135 +1,116 @@
 ##########################################################################
 # Define network policies for the sciencedata and sciencedata-dev namespaces
-# default allow external, reject internal, and reject the trusted silo net
+# NB kubernetes networkPolicies are whitelist only. A rule must be made
+# to match all desired types of traffic
 ##########################################################################
 
 {% for ns in ['sciencedata', 'sciencedata-dev'] %}
-apiVersion: projectcalico.org/v3
+apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: sciencedata-network
   namespace: {{ ns }}
 spec:
-  order: 0
-  selector: all()
+  policyTypes:
+    - Egress
+    - Ingress
   egress:
-# Deny traffic to the trusted silo subnet
-    - action: Deny
-      destination:
-        nets:
-          - {{ trusted_silo_cidr }}
-# Allow traffic to the internal kubernetes dns server
-    - action: Allow
-      destination:
-        namespaceSelector:
-          projectcalico.org/name == 'kube-system'
-        selector: k8s-app == 'kube-dns'
-# Deny all other traffic to kubernetes components
-    - action: Deny
-      destination:
-        namespaceSelector: all()
-        selector: all()
-# Allow what remains (external only)
+    - to:
+      # Allow egress traffic to anywhere outside the cluster
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+            - {{ trusted_silo_cidr }}
+            - {{ trusted_cluster_cidr }}
+            - {{ pod_network_cidr }}
+      # Allow egress to the dns server
+      # (the only thing in the cluster that should be reachable from user pods)
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+  ingress:
+    - from:
+      # Allow ingress from the reverse proxy, nowhere else
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sciencedata-allow-to-k8s-apiserver
+  namespace: {{ ns }}
+spec:
+  policyTypes:
+    - Egress
+  # Only the user-pods-backend pod should be able to reach the k8s apiserver
+  podSelector:
+    matchLabels:
+      app: user-pods-backend
+  egress:
+    - to:
+      # the apiserver is accessed by the host nodes IP address,
+      # which will lie in the trusted cluster subnet
+      - ipBlock:
+          cidr: {{ trusted_cluster_cidr }}
 ---
 {% endfor %}
 
 ##########################################################################
-# Globally prohibit traffic to the trusted network, expect for kube-system
-# which needs to access the dns server in the local gateway
+# Block all traffic besides that from the reverse proxy for all ns where
+# this is the expected behavior (i.e. just one thing that sits behind the
+# reverse proxy)
 ##########################################################################
 
-apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy
+{% for ns in ['docker-registry', 'acme-dns'] %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: block-private
+  name: reverse-proxy-only
+  namespace: {{ ns }}
 spec:
-  order: 0
-  selector: all()
-  namespaceSelector: projectcalico.org/name != 'kube-system'
-  egress:
-    - action: Deny
-      destination:
-        nets:
-          - {{ trusted_silo_cidr }}
-    - action: Allow
+  policyTypes:
+    - Egress
+    - Ingress
+  egress: []
+  ingress:
+    - from:
+      # Allow ingress from the reverse proxy, nowhere else
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
 ---
-
-
-##########################################################################
-# Define HostEndpoints for each interface in the cluster
-# with labels for whether they have a trusted or a public IP address
-##########################################################################
-{% for host in groups.cluster %}
-{% if hostvars[host]['trusted_network_interface'] %}
-apiVersion: projectcalico.org/v3
-kind: HostEndpoint
-metadata:
-  name: {{ hostvars[host]['ansible_hostname'] }}-{{ hostvars[host]['trusted_network_interface'] }}
-  labels:
-    trusted-network: {{ hostvars[host]['ansible_hostname'] }}
-spec:
-  interfaceName: {{ hostvars[host]['trusted_network_interface'] }}
-  node: {{ hostvars[host]['ansible_hostname'] }}
-  expectedIPs:
-    - {{ hostvars[host]['trusted_network_address'] }}
----
-{% endif %}
-{% if hostvars[host]['public_network_interface'] is defined %}
-apiVersion: projectcalico.org/v3
-kind: HostEndpoint
-metadata:
-  name: {{ hostvars[host]['ansible_hostname'] }}-{{ hostvars[host]['public_network_interface'] }}
-  labels:
-    public-network: {{ hostvars[host]['ansible_hostname'] }}
-spec:
-  interfaceName: {{ hostvars[host]['public_network_interface'] }}
-  node: {{ hostvars[host]['ansible_hostname'] }}
-  expectedIPs:
-    - {{ hostvars[host]['public_network_address'] }}
----
-{% endif %}
 {% endfor %}
 
 ##########################################################################
-# Define a default allow rule for all traffic once it gets to the cluster.
+# The ingress controller (reverse proxy) should have only ingress from
+# outside the cluster and egress to within the cluster
 ##########################################################################
-apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: default-allow
+  name: ingress-controller
+  namespace: ingress-nginx
 spec:
-  order: 99
-  ingress:
-    - action: Allow
+  policyTypes:
+    - Egress
+    - Ingress
   egress:
-    - action: Allow
-  selector: all()
----
-
-
-##########################################################################
-# Block external http traffic to the acme-dns server
-# It needs to bind to the host network in order to serve port 53 externally,
-# so http needs to bind to a high port. Ingress can control access proxied
-# through 80/443, but this policy will block access to the high port itself.
-##########################################################################
-apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy
-metadata:
-  name: restrict-acme-dns
-spec:
-  order: 1
-  selector: has(public-network)
+    - to:
+        - namespaceSelector: {}
   ingress:
-    - action: Deny
-      protocol: TCP
-      source:
-        notNets:
-          - 127.0.0.0/8
-          - {{ trusted_network_cidr }}
-          - {{ vlan_subnet_cidr }}
-          - {{ pod_network_cidr }}
-      destination:
-        ports:
-          - {{ acmedns_host_http_port }}
+    - from:
+        # Allow from any IP addresses except for pods
+        # Note that pods can still reach the ingress controller
+        # via the node IP port 80/443, since this policy doesnt
+        # affect the host network
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - {{ pod_network_cidr }}
+
 ---
