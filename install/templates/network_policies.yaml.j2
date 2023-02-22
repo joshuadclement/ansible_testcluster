@@ -102,6 +102,8 @@ spec:
   egress:
     - to:
         - namespaceSelector: {}
+        - ipBlock:
+            cidr: {{ trusted_cluster_cidr }}
   ingress:
     - from:
         # Allow from any IP addresses except for pods
